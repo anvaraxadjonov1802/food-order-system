@@ -6,7 +6,7 @@ const compressImage = (file, maxWidth = 1200, quality = 0.82) => new Promise((re
   const reader = new FileReader();
   reader.readAsDataURL(file);
   reader.onload = (e) => {
-    const img = new Image();
+    const img = new window.Image();
     img.src = e.target.result;
     img.onload = () => {
       const canvas = document.createElement("canvas");
@@ -20,8 +20,13 @@ const compressImage = (file, maxWidth = 1200, quality = 0.82) => new Promise((re
 });
 
 const uploadToServer = async (file, token) => {
-  const fd = new FormData(); fd.append("image", file);
-  const res = await fetch(`${API}/api/upload`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
+  const fd = new FormData();
+  fd.append("image", file);
+  const res = await fetch(`${API}/api/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || "Yuklash xatosi");
   return data.url;
@@ -30,21 +35,28 @@ const uploadToServer = async (file, token) => {
 const LANGS = ["uz", "ru", "en"];
 const LANG_LABELS = { uz: "🇺🇿 O'zbek", ru: "🇷🇺 Русский", en: "🇬🇧 English" };
 
+const getField = (field, lang) => {
+  if (!field) return "";
+  if (typeof field === "string") return field;
+  return field[lang] || field.uz || field.ru || field.en || "";
+};
+
 export default function Admin() {
   const token = localStorage.getItem("token");
   const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
   useEffect(() => { if (!token) window.location.href = "/login"; }, [token]);
 
   const [tab, setTab] = useState("foods");
-  const [activeLang, setActiveLang] = useState("uz"); // food form active lang tab
+  const [activeLang, setActiveLang] = useState("uz");
 
-  // Food form — 3 tilli
+  // Food form
   const [titles, setTitles] = useState({ uz: "", ru: "", en: "" });
   const [descs, setDescs] = useState({ uz: "", ru: "", en: "" });
-  const [categories, setCategories] = useState([]);
-  const [catNames, setCatNames] = useState({ uz: "", ru: "", en: "" }); // yangi kategoriya
-  const [selectedCat, setSelectedCat] = useState({ uz: "", ru: "", en: "" }); // tanlangan kategoriya
   const [price, setPrice] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [selectedCat, setSelectedCat] = useState({ uz: "", ru: "", en: "" });
+  const [catNames, setCatNames] = useState({ uz: "", ru: "", en: "" });
+  const [showCatInput, setShowCatInput] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadedUrl, setUploadedUrl] = useState("");
@@ -53,7 +65,6 @@ export default function Admin() {
   const [foods, setFoods] = useState([]);
   const [editId, setEditId] = useState(null);
   const [foodLoading, setFoodLoading] = useState(false);
-  const [showCatInput, setShowCatInput] = useState(false);
   const [selectedFood, setSelectedFood] = useState(null);
   const [deleteCatModal, setDeleteCatModal] = useState(null);
   const [deleteCatAction, setDeleteCatAction] = useState("delete");
@@ -84,12 +95,11 @@ export default function Admin() {
       if (res.ok) {
         const data = await res.json();
         setFoods(data);
-        // Kategoriyalarni yig'ish
         const cats = [];
         data.forEach(f => {
-          if (f.category?.uz) {
-            const existing = cats.find(c => c.uz === f.category.uz);
-            if (!existing) cats.push({ uz: f.category.uz, ru: f.category.ru || f.category.uz, en: f.category.en || f.category.uz });
+          const key = getField(f.category, "uz");
+          if (key && !cats.find(c => getField(c, "uz") === key)) {
+            cats.push(f.category);
           }
         });
         setCategories(cats);
@@ -126,26 +136,15 @@ export default function Admin() {
     setPrice(""); setImageFile(null); setImagePreview(null); setUploadedUrl(""); setEditId(null);
   };
 
-  // Kategoriya tanlash
-  const selectCategory = (cat) => {
-    setSelectedCat({ uz: cat.uz, ru: cat.ru, en: cat.en });
-  };
-
-  // Yangi kategoriya qo'shish
   const addCategory = () => {
     if (!catNames.uz.trim()) { alert("O'zbek tilidagi nomi shart!"); return; }
-    const newCat = {
-      uz: catNames.uz.trim(),
-      ru: catNames.ru.trim() || catNames.uz.trim(),
-      en: catNames.en.trim() || catNames.uz.trim(),
-    };
+    const newCat = { uz: catNames.uz.trim(), ru: catNames.ru.trim() || catNames.uz.trim(), en: catNames.en.trim() || catNames.uz.trim() };
     setCategories(prev => [...prev, newCat]);
     setSelectedCat(newCat);
     setCatNames({ uz: "", ru: "", en: "" });
     setShowCatInput(false);
   };
 
-  // Rasm
   const handleImageChange = async (e) => {
     const file = e.target.files[0]; if (!file) return;
     setCompressing(true); setUploadedUrl("");
@@ -165,26 +164,27 @@ export default function Admin() {
     try {
       const url = await uploadToServer(imageFile, token);
       setUploadedUrl(url);
+      setImagePreview(url);
     } catch (e) { alert("Yuklash xatosi: " + e.message); }
     finally { setUploading(false); }
   };
 
-  // Food submit
   const handleFoodSubmit = async (e) => {
     e.preventDefault();
     if (!titles.uz.trim()) { alert("O'zbek tili nomini kiriting!"); return; }
     if (!selectedCat.uz) { alert("Kategoriya tanlang!"); return; }
-    if (!uploadedUrl && !editId) { alert("Rasmni yuklang!"); return; }
+    if (!uploadedUrl && !editId) { alert("Rasmni yuklang! (Fayl tanlang → Serverga yuklash tugmasini bosing)"); return; }
 
     setFoodLoading(true);
     try {
       const body = {
         title_uz: titles.uz, title_ru: titles.ru || titles.uz, title_en: titles.en || titles.uz,
-        price,
+        price: String(price),
         category_uz: selectedCat.uz, category_ru: selectedCat.ru || selectedCat.uz, category_en: selectedCat.en || selectedCat.uz,
         desc_uz: descs.uz, desc_ru: descs.ru, desc_en: descs.en,
-        ...(uploadedUrl && { imageUrl: uploadedUrl }),
+        imageUrl: uploadedUrl || undefined,
       };
+      if (!uploadedUrl) delete body.imageUrl;
 
       const url = editId ? `${API}/api/foods/${editId}` : `${API}/api/foods`;
       const res = await fetch(url, {
@@ -194,8 +194,8 @@ export default function Admin() {
       });
       const data = await res.json();
       if (res.ok) { alert(editId ? "✅ Yangilandi!" : "✅ Qo'shildi!"); resetForm(); fetchFoods(); }
-      else alert(data.message || "Xatolik!");
-    } catch { alert("Server xatosi!"); }
+      else alert(data.message || "Xatolik! " + JSON.stringify(data));
+    } catch (e) { alert("Server xatosi: " + e.message); }
     finally { setFoodLoading(false); }
   };
 
@@ -206,29 +206,21 @@ export default function Admin() {
   };
 
   const handleEdit = (food) => {
-    // Eski string format yoki yangi object format
-    const getVal = (field, lang) => {
-      if (!field) return "";
-      if (typeof field === "string") return field;
-      return field[lang] || field.uz || "";
-    };
-    setTitles({ uz: getVal(food.title, "uz"), ru: getVal(food.title, "ru"), en: getVal(food.title, "en") });
-    setDescs({ uz: getVal(food.description, "uz"), ru: getVal(food.description, "ru"), en: getVal(food.description, "en") });
-    const cat = {
-      uz: getVal(food.category, "uz"), ru: getVal(food.category, "ru"), en: getVal(food.category, "en")
-    };
+    setTitles({ uz: getField(food.title, "uz"), ru: getField(food.title, "ru"), en: getField(food.title, "en") });
+    setDescs({ uz: getField(food.description, "uz"), ru: getField(food.description, "ru"), en: getField(food.description, "en") });
+    const cat = typeof food.category === "object"
+      ? food.category
+      : { uz: food.category, ru: food.category, en: food.category };
     setSelectedCat(cat);
     setPrice(food.price);
     setEditId(food._id);
     setUploadedUrl(food.image || "");
-    setImagePreview(food.image || "");
+    setImagePreview(food.image || null);
     setImageFile(null);
-    setSelectedFood(null);
-    setTab("foods");
+    setSelectedFood(null); setTab("foods");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Orders
   const updateOrderStatus = async (id, status) => {
     const res = await fetch(`${API}/api/orders/${id}/status`, { method: "PUT", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
     if (res.ok) fetchOrders();
@@ -239,7 +231,6 @@ export default function Admin() {
     if (res.ok) fetchOrders();
   };
 
-  // Admins
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
     const res = await fetch(`${API}/auth/create-admin`, { method: "POST", headers: { ...authHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ username: newUsername, password: newPassword, role: newRole }) });
@@ -247,14 +238,12 @@ export default function Admin() {
     if (res.ok) { alert("✅ Admin yaratildi!"); setNewUsername(""); setNewPassword(""); fetchAdmins(); }
     else alert(data.message);
   };
-
   const handleDeleteAdmin = async (id) => {
     if (!window.confirm("O'chirishni tasdiqlaysizmi?")) return;
     const res = await fetch(`${API}/auth/admins/${id}`, { method: "DELETE", headers: authHeaders });
     if (res.ok) fetchAdmins();
   };
 
-  // Banner
   const handleBannerSave = async () => {
     setBannerLoading(true);
     try {
@@ -282,22 +271,6 @@ export default function Admin() {
   const statusLabel = { new: "Yangi", preparing: "Tayyorlanmoqda", delivered: "Yetkazildi", cancelled: "Bekor" };
   const statusColor = { new: "#3b82f6", preparing: "#f59e0b", delivered: "#10b981", cancelled: "#ef4444" };
 
-  const getFoodTitle = (food) => {
-    if (!food.title) return "—";
-    if (typeof food.title === "string") return food.title;
-    return food.title.uz || food.title.ru || "—";
-  };
-  const getFoodCat = (food) => {
-    if (!food.category) return "—";
-    if (typeof food.category === "string") return food.category;
-    return food.category.uz || "—";
-  };
-  const getFoodDesc = (food) => {
-    if (!food.description) return "";
-    if (typeof food.description === "string") return food.description;
-    return food.description.uz || "";
-  };
-
   return (
     <div className="admin-root">
       <div className="admin-topbar">
@@ -320,7 +293,7 @@ export default function Admin() {
 
       <div className="admin-content">
 
-        {/* ══ FOODS ══ */}
+        {/* FOODS */}
         {tab === "foods" && (
           <>
             <div className="admin-section">
@@ -328,7 +301,7 @@ export default function Admin() {
               <form onSubmit={handleFoodSubmit} className="food-form">
 
                 {/* Til tablar */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
                   {LANGS.map(l => (
                     <button key={l} type="button"
                       className={`cat-chip ${activeLang === l ? "selected" : ""}`}
@@ -338,10 +311,9 @@ export default function Admin() {
                   ))}
                 </div>
 
-                {/* Nom va tavsif — tanlangan til uchun */}
                 <div className="form-grid">
                   <div className="input-group">
-                    <label>Taom nomi ({activeLang.toUpperCase()}) {activeLang === "uz" && "*"}</label>
+                    <label>Taom nomi — {LANG_LABELS[activeLang]} {activeLang === "uz" && "*"}</label>
                     <input type="text"
                       placeholder={activeLang === "uz" ? "Masalan: Osh" : activeLang === "ru" ? "Например: Плов" : "Example: Pilaf"}
                       value={titles[activeLang]}
@@ -349,7 +321,7 @@ export default function Admin() {
                       required={activeLang === "uz"}
                     />
                     {activeLang !== "uz" && titles.uz && (
-                      <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>UZ: {titles.uz}</span>
+                      <span style={{ fontSize: "0.75rem", color: "var(--gray)", marginTop: 2 }}>UZ: {titles.uz}</span>
                     )}
                   </div>
                   <div className="input-group">
@@ -359,9 +331,9 @@ export default function Admin() {
                 </div>
 
                 <div className="input-group" style={{ marginBottom: 16 }}>
-                  <label>Tavsif ({activeLang.toUpperCase()})</label>
+                  <label>Tavsif — {LANG_LABELS[activeLang]}</label>
                   <textarea
-                    placeholder={activeLang === "uz" ? "Taom haqida..." : activeLang === "ru" ? "Описание блюда..." : "Food description..."}
+                    placeholder={activeLang === "uz" ? "Taom haqida..." : activeLang === "ru" ? "Описание..." : "Description..."}
                     value={descs[activeLang]}
                     onChange={e => setDescs(d => ({ ...d, [activeLang]: e.target.value }))}
                     rows={3}
@@ -375,21 +347,19 @@ export default function Admin() {
                     <div className="cat-chips">
                       {categories.map((cat, idx) => (
                         <button key={idx} type="button"
-                          className={`cat-chip ${selectedCat.uz === cat.uz ? "selected" : ""}`}
-                          onClick={() => selectCategory(cat)}>
-                          {cat[activeLang] || cat.uz}
+                          className={`cat-chip ${selectedCat.uz === getField(cat, "uz") ? "selected" : ""}`}
+                          onClick={() => setSelectedCat(typeof cat === "object" ? cat : { uz: cat, ru: cat, en: cat })}>
+                          {getField(cat, activeLang) || getField(cat, "uz")}
                         </button>
                       ))}
-                      <button type="button" className="cat-chip add-cat-btn"
-                        onClick={() => setShowCatInput(!showCatInput)}>
+                      <button type="button" className="cat-chip add-cat-btn" onClick={() => setShowCatInput(!showCatInput)}>
                         + Yangi kategoriya
                       </button>
                     </div>
 
-                    {/* Yangi kategoriya — 3 tilda */}
                     {showCatInput && (
                       <div style={{ background: "var(--g3)", borderRadius: 14, padding: 16, marginTop: 12 }}>
-                        <p style={{ fontSize: "0.85rem", fontWeight: 700, marginBottom: 10, color: "var(--g4)" }}>Yangi kategoriya — 3 tilda</p>
+                        <p style={{ fontSize: "0.85rem", fontWeight: 700, marginBottom: 10 }}>Yangi kategoriya — 3 tilda</p>
                         {LANGS.map(l => (
                           <div key={l} className="input-group" style={{ marginBottom: 8 }}>
                             <label>{LANG_LABELS[l]} {l === "uz" && "*"}</label>
@@ -406,34 +376,41 @@ export default function Admin() {
                         </div>
                       </div>
                     )}
-
                     {selectedCat.uz && (
-                      <p className="selected-cat-label">
-                        ✅ Tanlandi: <strong>{selectedCat.uz}</strong>
-                        {selectedCat.ru && selectedCat.ru !== selectedCat.uz && ` / ${selectedCat.ru}`}
-                        {selectedCat.en && selectedCat.en !== selectedCat.uz && ` / ${selectedCat.en}`}
-                      </p>
+                      <p className="selected-cat-label">✅ {selectedCat.uz}{selectedCat.ru && selectedCat.ru !== selectedCat.uz ? ` / ${selectedCat.ru}` : ""}{selectedCat.en && selectedCat.en !== selectedCat.uz ? ` / ${selectedCat.en}` : ""}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Rasm */}
+                {/* RASM */}
                 <div className="input-group" style={{ marginBottom: 16 }}>
                   <label>Rasm {!editId && "*"}</label>
                   <input type="file" accept="image/*" onChange={handleImageChange} />
                   {compressing && <p style={{ color: "var(--g)", fontSize: "0.82rem", marginTop: 4 }}>⏳ Optimallashtirilmoqda...</p>}
+
                   {imageFile && !uploadedUrl && (
-                    <button type="button" className="btn-primary" style={{ marginTop: 10 }} onClick={handleUpload} disabled={uploading}>
+                    <button type="button" className="btn-primary" style={{ marginTop: 10 }} onClick={handleUpload} disabled={uploading || compressing}>
                       {uploading ? "⏳ Yuklanmoqda..." : "☁️ Serverga yuklash"}
                     </button>
                   )}
+
                   {uploadedUrl && (
-                    <div style={{ marginTop: 8, padding: "8px 12px", background: "#d1fae5", borderRadius: 10, fontSize: "0.85rem", color: "#065f46", fontWeight: 600 }}>
-                      ✅ Rasm yuklandi!
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "8px 12px", background: "#d1fae5", borderRadius: 10 }}>
+                      <span style={{ fontSize: "0.85rem", color: "#065f46", fontWeight: 700 }}>✅ Rasm yuklandi!</span>
+                      <button type="button" onClick={() => { setUploadedUrl(""); setImagePreview(null); setImageFile(null); }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#e53e3e", fontSize: 18 }}>✕</button>
                     </div>
                   )}
+
                   {imagePreview && (
-                    <img src={imagePreview} alt="preview" style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 12, border: "2px solid var(--g3)", marginTop: 10 }} />
+                    <img src={imagePreview} alt="preview"
+                      style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 12, border: "2px solid var(--g3)", marginTop: 10 }} />
+                  )}
+
+                  {!editId && !uploadedUrl && (
+                    <p style={{ fontSize: "0.8rem", color: "#e53e3e", marginTop: 6, fontWeight: 600 }}>
+                      ⚠️ Fayl tanlang → "Serverga yuklash" tugmasini bosing!
+                    </p>
                   )}
                 </div>
 
@@ -443,12 +420,6 @@ export default function Admin() {
                   </button>
                   {editId && <button type="button" className="btn-secondary" onClick={resetForm}>Bekor qilish</button>}
                 </div>
-
-                {!editId && (
-                  <p style={{ fontSize: "0.8rem", color: "var(--gray)", marginTop: 8 }}>
-                    💡 Jarayon: Barcha tillarda nom kiriting → Rasm yuklang → Qo'shish
-                  </p>
-                )}
               </form>
             </div>
 
@@ -457,13 +428,13 @@ export default function Admin() {
               <div className="food-admin-grid">
                 {foods.map(food => (
                   <div key={food._id} className="food-admin-card" onClick={() => setSelectedFood(food)}>
-                    <img src={food.image || "https://placehold.co/200x120/e8f5ee/1d6b3e?text=Rasm"} alt={getFoodTitle(food)} className="food-admin-img"
+                    <img src={food.image || "https://placehold.co/200x120/e8f5ee/1d6b3e?text=Rasm"} alt={getField(food.title, "uz")} className="food-admin-img"
                       onError={e => e.target.src = "https://placehold.co/200x120/e8f5ee/1d6b3e?text=Rasm"} />
                     <div className="food-admin-info">
-                      <span className="food-admin-cat">{getFoodCat(food)}</span>
-                      <h4>{getFoodTitle(food)}</h4>
+                      <span className="food-admin-cat">{getField(food.category, "uz")}</span>
+                      <h4>{getField(food.title, "uz")}</h4>
                       <p className="food-admin-price">{food.price?.toLocaleString()} so'm</p>
-                      <p className="food-admin-desc">{getFoodDesc(food)}</p>
+                      <p className="food-admin-desc">{getField(food.description, "uz")}</p>
                       <div className="food-admin-btns" onClick={e => e.stopPropagation()}>
                         <button className="btn-edit" onClick={() => handleEdit(food)}>✏️ Tahrirlash</button>
                         <button className="btn-delete" onClick={() => handleDelete(food._id)}>🗑 O'chirish</button>
@@ -476,7 +447,7 @@ export default function Admin() {
           </>
         )}
 
-        {/* ══ ORDERS ══ */}
+        {/* ORDERS */}
         {tab === "orders" && (
           <div className="admin-section">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -526,7 +497,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ══ BANNER ══ */}
+        {/* BANNER */}
         {tab === "banner" && (
           <div className="admin-section">
             <h2 className="section-title">🎨 Bosh sahifa banneri</h2>
@@ -535,7 +506,7 @@ export default function Admin() {
               {banner.mediaType === "video" && banner.mediaUrl && <video src={banner.mediaUrl} autoPlay muted loop playsInline className="banner-preview-media" />}
               <div className="banner-preview-overlay" />
               <div className="banner-preview-content">
-                <div className="banner-preview-title">{banner.title || "Sarlavha"}</div>
+                <div className="banner-preview-title">{banner.title}</div>
                 <div className="banner-preview-subtitle">{banner.subtitle}</div>
                 <div className="banner-preview-desc">{banner.description}</div>
                 {banner.events?.length > 0 && <div className="banner-preview-events">{banner.events.map(ev => <span key={ev.id} className="banner-preview-event">{ev.emoji} {ev.label}</span>)}</div>}
@@ -549,7 +520,7 @@ export default function Admin() {
                 <div className="input-group">
                   <label>Fon rangi</label>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <input type="color" value={banner.bgColor} onChange={e => setBanner(b => ({ ...b, bgColor: e.target.value }))} style={{ width: 50, height: 38, border: "none", cursor: "pointer", borderRadius: 8 }} />
+                    <input type="color" value={banner.bgColor} onChange={e => setBanner(b => ({ ...b, bgColor: e.target.value }))} style={{ width: 50, height: 38, border: "none", borderRadius: 8, cursor: "pointer" }} />
                     <input type="text" value={banner.bgColor} onChange={e => setBanner(b => ({ ...b, bgColor: e.target.value }))} style={{ flex: 1 }} />
                   </div>
                 </div>
@@ -566,9 +537,9 @@ export default function Admin() {
               </div>
               {banner.mediaType !== "none" && (
                 <div className="input-group" style={{ marginTop: 12 }}>
-                  <label>Fayl yuklash yoki URL</label>
+                  <label>Fayl yoki URL</label>
                   <input type="file" accept={banner.mediaType === "image" ? "image/*" : "video/*"} onChange={e => setBannerFile(e.target.files[0])} />
-                  <input type="text" placeholder="Yoki URL kiriting..." value={banner.mediaUrl} onChange={e => setBanner(b => ({ ...b, mediaUrl: e.target.value }))} style={{ marginTop: 8 }} />
+                  <input type="text" placeholder="Yoki URL..." value={banner.mediaUrl} onChange={e => setBanner(b => ({ ...b, mediaUrl: e.target.value }))} style={{ marginTop: 8 }} />
                 </div>
               )}
               <div style={{ marginTop: 20 }}>
@@ -594,7 +565,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ══ ADMINS ══ */}
+        {/* ADMINS */}
         {tab === "admins" && savedUser.role === "superadmin" && (
           <div className="admin-section">
             <h2 className="section-title">👤 Admin yaratish</h2>
@@ -623,13 +594,13 @@ export default function Admin() {
         <div className="modal-overlay" onClick={() => setSelectedFood(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setSelectedFood(null)}>✕</button>
-            <img src={selectedFood.image || "https://placehold.co/400x200/e8f5ee/1d6b3e?text=Rasm"} alt={getFoodTitle(selectedFood)} className="modal-img"
+            <img src={selectedFood.image || "https://placehold.co/400x200/e8f5ee/1d6b3e?text=Rasm"} alt={getField(selectedFood.title, "uz")} className="modal-img"
               onError={e => e.target.src = "https://placehold.co/400x200/e8f5ee/1d6b3e?text=Rasm"} />
             <div className="modal-body">
-              <span className="food-admin-cat">{getFoodCat(selectedFood)}</span>
-              <h2 className="modal-title">{getFoodTitle(selectedFood)}</h2>
+              <span className="food-admin-cat">{getField(selectedFood.category, "uz")}</span>
+              <h2 className="modal-title">{getField(selectedFood.title, "uz")}</h2>
               <p className="modal-price">{selectedFood.price?.toLocaleString()} so'm</p>
-              <p className="modal-desc">{getFoodDesc(selectedFood)}</p>
+              <p className="modal-desc">{getField(selectedFood.description, "uz")}</p>
               <div className="modal-actions">
                 <button className="btn-edit" onClick={() => handleEdit(selectedFood)}>✏️ Tahrirlash</button>
                 <button className="btn-delete" onClick={() => handleDelete(selectedFood._id)}>🗑 O'chirish</button>
