@@ -1,64 +1,50 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./App.css";
+import { LOGO_GREEN } from "./i18n";
+
+const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setError(""); setLoading(true);
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:5000"}/auth/login`, {
+      const res = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || "Login xato!");
-        return;
-      }
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      window.location.href = "/admin";
-    } catch {
-      setError("Server bilan ulanishda xatolik!");
-    } finally {
-      setLoading(false);
-    }
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        navigate("/admin");
+      } else setError(data.message || "Noto'g'ri login yoki parol");
+    } catch { setError("Server bilan bog'lanishda xatolik"); }
+    finally { setLoading(false); }
   };
 
   return (
     <div className="login-root">
       <div className="login-card">
-        <div className="login-logo">🍽</div>
+        <img src={LOGO_GREEN} alt="Yalpiz" style={{ height: 60, width: "auto", objectFit: "contain", marginBottom: 8 }} />
         <h1 className="login-title">Admin Panel</h1>
-        <p className="login-sub">Tizimga kirish</p>
-
-        {error && <div className="login-error">{error}</div>}
-
-        <form onSubmit={handleLogin} className="login-form">
-          <div className="input-group">
-            <label>Username</label>
-            <input
-              type="text" placeholder="superadmin" required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-          <div className="input-group">
-            <label>Parol</label>
-            <input
-              type="password" placeholder="••••••••" required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? "Tekshirilmoqda..." : "Kirish →"}
+        <p className="login-sub">Yalpiz Restaurant</p>
+        <form className="login-form" onSubmit={handleSubmit}>
+          <input className="login-input" type="text" placeholder="Username"
+            value={username} onChange={e => setUsername(e.target.value)} required autoFocus />
+          <input className="login-input" type="password" placeholder="Parol"
+            value={password} onChange={e => setPassword(e.target.value)} required />
+          {error && <p className="login-error">⚠️ {error}</p>}
+          <button className="login-btn" type="submit" disabled={loading}>
+            {loading ? "Kirish..." : "🔐 Kirish"}
           </button>
         </form>
       </div>

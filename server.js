@@ -194,10 +194,10 @@ app.delete("/api/foods/:id", auth, async (req, res) => {
 // ════ ORDERS ══════════════════════════════════════════════════════════════════
 app.post("/api/orders", async (req, res) => {
   try {
-    const { customerName, customerPhone, items, totalPrice, address, location } = req.body;
+    const { customerName, customerPhone, items, totalPrice, address, location, orderType, tableNumber, paymentType } = req.body;
     if (!customerName || !customerPhone || !items?.length)
       return res.status(400).json({ message: "Ism, telefon va taomlar shart!" });
-    const order = await new Order({ customerName, customerPhone, items, totalPrice, address, location, status: "new" }).save();
+    const order = await new Order({ customerName, customerPhone, items, totalPrice, address, location, orderType: orderType || "delivery", tableNumber: tableNumber || "", paymentType: paymentType || "cash", status: "new" }).save();
     const itemsList = items.map(i => `  • ${i.title} × ${i.quantity} = ${(i.price * i.quantity).toLocaleString()} so'm`).join("\n");
     const locText = location ? `\n🗺 <a href="https://yandex.com/maps/?pt=${location.lng},${location.lat}&z=16&l=map">Xaritada ko'rish</a>` : "";
     await sendTelegram(`🛎 <b>YANGI BUYURTMA!</b>\n\n👤 <b>${customerName}</b>\n📞 ${customerPhone}\n${address ? `📍 ${address}\n` : ""}${locText}\n\n🍽 <b>Taomlar:</b>\n${itemsList}\n\n💰 <b>Jami: ${totalPrice?.toLocaleString()} so'm</b>`);
