@@ -249,6 +249,30 @@ export default function ProfilePage() {
           </>
         )}
       </div>
+      <BottomNav active="profile" navigate={navigate} />
     </div>
+  );
+}
+function BottomNav({ active, cartCount = 0, navigate }) {
+  return (
+    <nav className="bottom-nav">
+      <button className={`bottom-nav-btn ${active==="menu"?"active":""}`} onClick={() => navigate("/")}>
+        <span className="bottom-nav-icon">🍽</span>
+        <span>Menyu</span>
+      </button>
+      <button className={`bottom-nav-btn ${active==="cart"?"active":""}`} onClick={() => navigate("/cart")} style={{position:"relative"}}>
+        <span className="bottom-nav-icon">🛒</span>
+        <span>Savat</span>
+        {cartCount > 0 && <span className="bottom-nav-badge">{cartCount}</span>}
+      </button>
+      <button className={`bottom-nav-btn ${active==="orders"?"active":""}`} onClick={() => navigate("/orders")}>
+        <span className="bottom-nav-icon">📦</span>
+        <span>Buyurtmalar</span>
+      </button>
+      <button className={`bottom-nav-btn ${active==="profile"?"active":""}`} onClick={() => navigate("/profile")}>
+        <span className="bottom-nav-icon">👤</span>
+        <span>Profil</span>
+      </button>
+    </nav>
   );
 }

@@ -116,7 +116,6 @@ export default function Menu() {
                 </button>
               ))}
             </div>
-            <button className="g-orders-btn" onClick={() => navigate("/orders")} title={t.myOrders}>📦</button>
             {initials ? (
               <button className="g-profile-btn" onClick={() => navigate("/profile")}>{initials}</button>
             ) : (
@@ -192,7 +191,33 @@ export default function Menu() {
           })}
         </main>
       )}
+      {/* BOTTOM NAV */}
+      <BottomNav active="menu" cartCount={cartCount} navigate={navigate} />
     </div>
+  );
+}
+
+function BottomNav({ active, cartCount, navigate }) {
+  return (
+    <nav className="bottom-nav">
+      <button className={`bottom-nav-btn ${active==="menu"?"active":""}`} onClick={() => navigate("/")}>
+        <span className="bottom-nav-icon">🍽</span>
+        <span>Menyu</span>
+      </button>
+      <button className={`bottom-nav-btn ${active==="cart"?"active":""}`} onClick={() => navigate("/cart")} style={{position:"relative"}}>
+        <span className="bottom-nav-icon">🛒</span>
+        <span>Savat</span>
+        {cartCount > 0 && <span className="bottom-nav-badge">{cartCount}</span>}
+      </button>
+      <button className={`bottom-nav-btn ${active==="orders"?"active":""}`} onClick={() => navigate("/orders")}>
+        <span className="bottom-nav-icon">📦</span>
+        <span>Buyurtmalar</span>
+      </button>
+      <button className={`bottom-nav-btn ${active==="profile"?"active":""}`} onClick={() => navigate("/profile")}>
+        <span className="bottom-nav-icon">👤</span>
+        <span>Profil</span>
+      </button>
+    </nav>
   );
 }
 
