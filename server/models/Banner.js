@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 
 const BannerSchema = new mongoose.Schema({
-  // Asosiy ma'lumot
   title:       { type: String, default: "Mazali taomlar" },
   subtitle:    { type: String, default: "Yalpiz restoranidan" },
   description: { type: String, default: "" },
@@ -13,15 +12,19 @@ const BannerSchema = new mongoose.Schema({
   mediaUrl:    { type: String, default: "" },
   bgColor:     { type: String, default: "#1a5c30" },
 
-  // Slider uchun
-  order:       { type: Number, default: 0 },   // tartib
+  // Slider tartib
+  order:       { type: Number, default: 0 },
   isActive:    { type: Boolean, default: true },
 
   // Muddatli aksiya
   startDate:   { type: Date, default: null },
   endDate:     { type: Date, default: null },
 
-  // Events/chips
+  // Aksiya taomlar - kategoriya nomi
+  promoCategory: { type: String, default: "" },
+  promoLabel:    { type: String, default: "Aksiya taomlar" },
+
+  // Events/chips (banner ichidagi taglar)
   events: [{
     id:    { type: String },
     label: { type: String },

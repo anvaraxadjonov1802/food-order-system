@@ -95,7 +95,7 @@ export default function Admin() {
   const [editBanner, setEditBanner] = useState(null);
   const [bannerMediaFile, setBannerMediaFile] = useState(null);
   const [newBannerEvent, setNewBannerEvent] = useState({ label: "", emoji: "🔥" });
-  const defaultBannerForm = { title:"", subtitle:"", description:"", bgColor:"#1a5c30", mediaType:"none", mediaUrl:"", buttonText:"", buttonLink:"", startDate:"", endDate:"", order:0, isActive:true, events:[] };
+  const defaultBannerForm = { title:"", subtitle:"", description:"", bgColor:"#1a5c30", mediaType:"none", mediaUrl:"", buttonText:"", buttonLink:"", startDate:"", endDate:"", order:0, isActive:true, events:[], promoCategory:"", promoLabel:"Aksiya taomlar" };
   const [bannerForm, setBannerForm] = useState(defaultBannerForm);
 
   const authHeaders = { Authorization: `Bearer ${token}` };
@@ -669,6 +669,7 @@ export default function Admin() {
                                 startDate: b.startDate ? new Date(b.startDate).toISOString().split("T")[0] : "",
                                 endDate: b.endDate ? new Date(b.endDate).toISOString().split("T")[0] : "",
                                 order: b.order || 0, isActive: b.isActive, events: b.events || [],
+                                promoCategory: b.promoCategory || "", promoLabel: b.promoLabel || "Aksiya taomlar",
                               });
                               setShowBannerForm(true);
                             }}>✏️ Tahrirlash</button>
@@ -699,6 +700,30 @@ export default function Admin() {
                       </div>
                     </div>
                     <div className="input-group"><label>Tugma matni</label><input type="text" placeholder="Batafsil..." value={bannerForm.buttonText} onChange={e => setBannerForm(f=>({...f,buttonText:e.target.value}))} /></div>
+                  </div>
+
+                  {/* Aksiya taomlar sektsiyasi */}
+                  <div style={{background:"#fff9e6",borderRadius:14,padding:16,border:"2px solid #fde68a"}}>
+                    <p style={{fontWeight:800,fontSize:"0.88rem",marginBottom:12,color:"#92400e"}}>🔥 Banner ostida aksiya taomlar</p>
+                    <div className="form-grid">
+                      <div className="input-group">
+                        <label>Kategoriya (aksiya uchun)</label>
+                        <select value={bannerForm.promoCategory} onChange={e => setBannerForm(f=>({...f,promoCategory:e.target.value}))}>
+                          <option value="">— Yo'q —</option>
+                          {categories.map((cat, i) => {
+                            const key = typeof cat==="object" ? cat.uz : cat;
+                            return <option key={i} value={key}>{key}</option>;
+                          })}
+                        </select>
+                        <span style={{fontSize:"0.72rem",color:"#92400e"}}>Bu kategoriya taomlar banner ostida chiqadi</span>
+                      </div>
+                      <div className="input-group">
+                        <label>Aksiya sarlavhasi</label>
+                        <input type="text" placeholder="Aksiya taomlar" value={bannerForm.promoLabel} onChange={e => setBannerForm(f=>({...f,promoLabel:e.target.value}))} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="form-grid" style={{display:"none"}}>
                     <div className="input-group">
                       <label>Tartib raqami</label>
                       <input type="number" min="0" value={bannerForm.order} onChange={e => setBannerForm(f=>({...f,order:parseInt(e.target.value)||0}))} />
