@@ -279,6 +279,23 @@ function OrderCard({ order, t, compact }) {
         </div>
       )}
 
+      {/* Kuryer ma'lumotlari */}
+      {order.driverName && (
+        <div style={{background:"#f0fdf4",borderRadius:12,padding:"10px 13px",marginBottom:8,border:"1.5px solid var(--g3)"}}>
+          <div style={{fontWeight:700,fontSize:"0.85rem",color:"var(--g4)",marginBottom:4}}>🚗 Kuryer</div>
+          <div style={{fontSize:"0.82rem",color:"var(--gray)"}}>👤 {order.driverName}</div>
+          {order.driverPhone && <div style={{fontSize:"0.82rem",color:"var(--gray)"}}>📞 {order.driverPhone}</div>}
+          {order.carModel && <div style={{fontSize:"0.82rem",color:"var(--gray)"}}>🚙 {order.carModel}</div>}
+          {order.driverLocation?.lat && (
+            <a href={`https://yandex.com/maps/?pt=${order.driverLocation.lng},${order.driverLocation.lat}&z=16&l=map`}
+              target="_blank" rel="noreferrer"
+              style={{fontSize:"0.82rem",color:"var(--g)",fontWeight:700,textDecoration:"none",display:"block",marginTop:4}}>
+              🗺 Kuryerni xaritada ko'rish →
+            </a>
+          )}
+        </div>
+      )}
+
       <div style={{display:"flex",justifyContent:"space-between",
         borderTop:"1px solid var(--g3)",paddingTop:10,marginTop:4}}>
         <span style={{fontSize:"0.85rem",color:"var(--gray)"}}>{t.total}</span>

@@ -129,7 +129,7 @@ export default function Menu() {
               <button className="g-login-btn" onClick={() => navigate("/login-user")}>{t.login}</button>
             )}
             <button className="g-cart-nav" onClick={() => navigate("/cart")}>
-              <span className="g-cart-icon">🛒</span>
+              🛒
               {cartCount > 0 && <span className="g-cart-badge">{cartCount}</span>}
             </button>
           </div>

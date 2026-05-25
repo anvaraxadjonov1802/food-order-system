@@ -200,32 +200,58 @@ app.post("/api/orders", async (req, res) => {
     const order = await new Order({ customerName, customerPhone, items, totalPrice, address, location, orderType: orderType || "delivery", tableNumber: tableNumber || "", paymentType: paymentType || "cash", status: "new" }).save();
 
     // Millenium Taxi ga yuborish (faqat delivery bo'lsa)
-    if ((orderType === "delivery" || !orderType) && location && process.env.MILLENIUM_API_URL && process.env.MILLENIUM_TOKEN) {
+    if ((orderType === "delivery" || !orderType) && location && process.env.MILLENIUM_API_URL) {
       try {
-        const milRes = await fetch(`${process.env.MILLENIUM_API_URL}`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": process.env.MILLENIUM_TOKEN
-          },
-          body: JSON.stringify({
-            client_name: customerName,
-            client_phone: customerPhone,
-            address: address || "",
-            total_sum: totalPrice,
-            coords: location ? { lat: location.lat, lon: location.lng } : undefined,
-            order_id: order._id.toString(),
-          })
+        const crypto = require("crypto");
+        const milUrl = process.env.MILLENIUM_API_URL; // millennium.tm.taxi:8089
+        const apiKey = process.env.MILLENIUM_API_KEY || "";
+        const userId = process.env.MILLENIUM_USER_ID || "254";
+        const now = new Date();
+        const sourceTime = now.getFullYear().toString() +
+          String(now.getMonth()+1).padStart(2,"0") +
+          String(now.getDate()).padStart(2,"0") +
+          String(now.getHours()).padStart(2,"0") +
+          String(now.getMinutes()).padStart(2,"0") +
+          String(now.getSeconds()).padStart(2,"0");
+
+        const params = new URLSearchParams({
+          phone: customerPhone,
+          source: address || "",
+          source_time: sourceTime,
+          customer: customerName,
+          comment: `Yalpiz order #${order._id}`,
+          ...(location ? { source_lat: location.lat, source_lon: location.lng } : {})
         });
+
+        const paramsStr = params.toString();
+        const signature = crypto.createHash("md5")
+          .update(paramsStr + apiKey)
+          .digest("hex");
+
+        const protocol = milUrl.startsWith("http") ? "" : "http://";
+        const milRes = await fetch(`${protocol}${milUrl}/common_api/1.0/create_order`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Signature": signature,
+            "X-User-Id": userId
+          },
+          body: paramsStr,
+          timeout: 10000
+        });
+
         const milData = await milRes.json();
-        if (milData && (milData.order_id || milData.id)) {
-          order.milleniumOrderId = String(milData.order_id || milData.id);
+        console.log("Millenium response:", JSON.stringify(milData));
+
+        if (milData && milData.code === 0 && milData.data?.order_id) {
+          order.milleniumOrderId = String(milData.data.order_id);
           await order.save();
           console.log("✅ Millenium order yaratildi:", order.milleniumOrderId);
+        } else {
+          console.log("⚠️ Millenium order yaratilmadi:", milData?.descr);
         }
       } catch(milErr) {
         console.error("⚠️ Millenium API xato:", milErr.message);
-        // Xato bo'lsa ham davom etamiz
       }
     }
     const itemsList = items.map(i => `  • ${i.title} × ${i.quantity} = ${(i.price * i.quantity).toLocaleString()} so'm`).join("\n");
