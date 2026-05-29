@@ -13,6 +13,12 @@ const fmtPhone = (v) => { const d=v.replace(/\D/g,"").replace(/^998/,"").slice(0
 const rawPhone = (f) => "+998"+f.replace(/\s/g,"");
 const isValid = (f) => f.replace(/\s/g,"").length===9;
 
+
+const FILIALS = [
+  { id: "rustaveli", name: "Yalpiz — Shota Rustaveli, 115", address: "Shota Rustaveli ko'chasi, 115, Toshkent", lat: 41.2995, lng: 69.2401 },
+  { id: "mvd",       name: "Yalpiz MVD — Mirobod, 1/1",    address: "Mirobod ko'chasi, 1/1, Toshkent",    lat: 41.3015, lng: 69.2850 },
+];
+
 export default function CartPage() {
   const navigate = useNavigate();
   const [lang, setLang] = useState(getLang);
@@ -32,6 +38,7 @@ export default function CartPage() {
   const [locError, setLocError] = useState("");
   const [orderLoading, setOrderLoading] = useState(false);
   const [savedAddr, setSavedAddr] = useState(getSaved);
+  const [selectedFilial, setSelectedFilial] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
 
   const total = cart.reduce((s,i) => s+i.price*i.qty, 0);
@@ -78,10 +85,14 @@ export default function CartPage() {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           customerName: form.name, customerPhone: fullPhone,
-          address: orderType==="dine_in" ? `Restoran — Stol №${tableNumber}` : form.address,
+          address: orderType==="dine_in"
+            ? `${selectedFilial ? selectedFilial.name+", " : ""}Stol №${tableNumber}`
+            : form.address,
           location: orderType==="delivery" ? location : null,
           orderType, tableNumber: orderType==="dine_in" ? tableNumber : null,
           paymentType,
+          filialId: selectedFilial?.id || null,
+          filialName: selectedFilial?.name || null,
           items: cart.map(i => ({ foodId:i._id, title:getField(i.title, lang), price:i.price, quantity:i.qty })),
           totalPrice: total,
         }),
@@ -196,10 +207,21 @@ export default function CartPage() {
               <div className={`order-type-check ${orderType==="dine_in"?"active":""}`}>✓</div>
             </div>
             {orderType==="dine_in" && (
-              <div className="cp-form-field" style={{padding:"14px 16px",background:"#f0fdf4",borderRadius:14,border:"2px solid var(--g3)"}}>
-                <label>{t.tableNumber}</label>
-                <input type="number" placeholder={t.tableNumberPlaceholder} min="1"
-                  value={tableNumber} onChange={e => setTableNumber(e.target.value)} style={{marginTop:6}} />
+              <div style={{display:"flex",flexDirection:"column",gap:10,padding:"14px 16px",background:"#f0fdf4",borderRadius:14,border:"2px solid var(--g3)"}}>
+                <label style={{fontSize:"0.82rem",fontWeight:700,color:"var(--g4)"}}>🏠 Filial tanlang</label>
+                {FILIALS.map(f => (
+                  <div key={f.id} className={`order-type-card ${selectedFilial?.id===f.id?"selected":""}`}
+                    style={{padding:"10px 14px"}} onClick={() => setSelectedFilial(f)}>
+                    <span style={{fontSize:"1.2rem"}}>📍</span>
+                    <div style={{flex:1,fontSize:"0.85rem",fontWeight:700,color:"var(--g4)"}}>{f.name}</div>
+                    <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}>✓</div>
+                  </div>
+                ))}
+                <div className="cp-form-field" style={{marginTop:4}}>
+                  <label>{t.tableNumber}</label>
+                  <input type="number" placeholder={t.tableNumberPlaceholder} min="1"
+                    value={tableNumber} onChange={e => setTableNumber(e.target.value)} style={{marginTop:6}} />
+                </div>
               </div>
             )}
 
@@ -212,6 +234,19 @@ export default function CartPage() {
               </div>
               <div className={`order-type-check ${orderType==="delivery"?"active":""}`}>✓</div>
             </div>
+            {orderType==="delivery" && (
+              <div style={{display:"flex",flexDirection:"column",gap:8,padding:"14px 16px",background:"#fff9e6",borderRadius:14,border:"2px solid #fde68a"}}>
+                <label style={{fontSize:"0.82rem",fontWeight:700,color:"#92400e"}}>🏠 Qaysi filialdan yetkazish kerak?</label>
+                {FILIALS.map(f => (
+                  <div key={f.id} className={`order-type-card ${selectedFilial?.id===f.id?"selected":""}`}
+                    style={{padding:"10px 14px",background:"white"}} onClick={() => setSelectedFilial(f)}>
+                    <span style={{fontSize:"1.2rem"}}>📍</span>
+                    <div style={{flex:1,fontSize:"0.85rem",fontWeight:700,color:"var(--g4)"}}>{f.name}</div>
+                    <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}>✓</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* To'lov */}

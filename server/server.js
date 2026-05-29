@@ -194,10 +194,18 @@ app.delete("/api/foods/:id", auth, async (req, res) => {
 // ════ ORDERS ══════════════════════════════════════════════════════════════════
 app.post("/api/orders", async (req, res) => {
   try {
-    const { customerName, customerPhone, items, totalPrice, address, location, orderType, tableNumber, paymentType } = req.body;
+    const { customerName, customerPhone, items, totalPrice, address, location, orderType, tableNumber, paymentType, filialId, filialName } = req.body;
     if (!customerName || !customerPhone || !items?.length)
       return res.status(400).json({ message: "Ism, telefon va taomlar shart!" });
-    const order = await new Order({ customerName, customerPhone, items, totalPrice, address, location, orderType: orderType || "delivery", tableNumber: tableNumber || "", paymentType: paymentType || "cash", status: "new" }).save();
+    const order = await new Order({
+      customerName, customerPhone, items, totalPrice, address, location,
+      orderType: orderType || "delivery",
+      tableNumber: tableNumber || "",
+      paymentType: paymentType || "cash",
+      filialId: filialId || null,
+      filialName: filialName || null,
+      status: "new"
+    }).save();
 
     // Millenium Taxi ga yuborish (faqat delivery bo'lsa)
     if ((orderType === "delivery" || !orderType) && location && process.env.MILLENIUM_API_URL) {
@@ -228,8 +236,9 @@ app.post("/api/orders", async (req, res) => {
           .update(paramsStr + apiKey)
           .digest("hex");
 
-        const protocol = milUrl.startsWith("http") ? "" : "http://";
-        const milRes = await fetch(`${protocol}${milUrl}/common_api/1.0/create_order`, {
+        // URL to'g'irlash: millennium.tm.taxi:8089 => http://millennium.tm.taxi:8089
+        const fullUrl = milUrl.startsWith("http") ? milUrl : `http://${milUrl}`;
+        const milRes = await fetch(`${fullUrl}/common_api/1.0/create_order`, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",

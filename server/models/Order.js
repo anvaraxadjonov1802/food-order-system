@@ -17,6 +17,10 @@ const OrderSchema = new mongoose.Schema({
   paymentType: { type: String, enum: ["cash", "card"], default: "cash" },
   status:      { type: String, enum: ["new","preparing","delivered","cancelled"], default: "new" },
   
+  // Filial
+  filialId:   { type: String, default: null },
+  filialName: { type: String, default: null },
+
   // Millenium Taxi integration
   milleniumOrderId: { type: String, default: null },
   driverName:       { type: String, default: "" },
