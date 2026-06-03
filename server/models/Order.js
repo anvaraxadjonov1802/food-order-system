@@ -14,7 +14,38 @@ const OrderSchema = new mongoose.Schema({
   location:    { lat: Number, lng: Number },
   orderType:   { type: String, enum: ["dine_in", "delivery"], default: "delivery" },
   tableNumber: { type: String, default: "" },
-  paymentType: { type: String, enum: ["cash", "card"], default: "cash" },
+  paymentType: {
+    type: String,
+    enum: ["cash", "card", "click", "payme"],
+    default: "cash"
+  },
+
+  paymentProvider: {
+    type: String,
+    enum: ["cash", "card", "click", "payme"],
+    default: "cash"
+  },
+
+  paymentStatus: {
+    type: String,
+    enum: ["unpaid", "pending", "paid", "cancelled", "failed"],
+    default: "unpaid"
+  },
+
+  paymentUrl: { type: String, default: "" },
+  paymentTransactionId: { type: String, default: "" },
+
+  paymeTransactionId: { type: String, default: "" },
+  paymeState: { type: Number, default: 0 },
+  paymeCreateTime: { type: Number, default: 0 },
+  paymePerformTime: { type: Number, default: 0 },
+  paymeCancelTime: { type: Number, default: 0 },
+
+  clickTransId: { type: String, default: "" },
+  clickPaydocId: { type: String, default: "" },
+  clickPrepareId: { type: String, default: "" },
+  clickCompleteId: { type: String, default: "" },
+
   status:      { type: String, enum: ["new","preparing","delivered","cancelled"], default: "new" },
   
   // Filial
