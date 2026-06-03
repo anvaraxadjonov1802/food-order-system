@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const https = require("https");
 const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
 const connectDB = require("./db");
 const Food = require("./models/Food");
@@ -14,7 +15,12 @@ const AdminUser = require("./models/AdminUser");
 const Banner = require("./models/Banner");
 const Image = require("./models/Image");
 
+const crypto = require("crypto");
+
 const app = express();
+const milleniumHttpsAgent = new https.Agent({
+  rejectUnauthorized: false,
+});
 const JWT_SECRET = process.env.JWT_SECRET || "restoran_secret_key_2024";
 
 app.use(cors());
@@ -57,6 +63,122 @@ const sendTelegram = async (text) => {
       });
     } catch (e) { console.error("Telegram:", e.message); }
   }
+};
+const toTiyin = (amount) => Math.round(Number(amount || 0) * 100);
+
+const nowMs = () => Date.now();
+
+const paymeError = (id, code, message, data = null) => ({
+  jsonrpc: "2.0",
+  id,
+  error: {
+    code,
+    message: {
+      uz: message,
+      ru: message,
+      en: message,
+    },
+    data,
+  },
+});
+
+const paymeResult = (id, result) => ({
+  jsonrpc: "2.0",
+  id,
+  result,
+});
+
+const checkPaymeAuth = (req) => {
+  const auth = req.headers.authorization || "";
+  const expected = Buffer.from(
+    `${process.env.PAYME_LOGIN || "Paycom"}:${process.env.PAYME_KEY || ""}`
+  ).toString("base64");
+
+  return auth === `Basic ${expected}`;
+};
+
+const makePaymePaymentUrl = (order) => {
+  const merchantId = process.env.PAYME_MERCHANT_ID;
+  if (!merchantId) return "";
+
+  const amountTiyin = toTiyin(order.totalPrice);
+  const returnUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+  const params = [
+    `m=${merchantId}`,
+    `ac.order_id=${order._id}`,
+    `a=${amountTiyin}`,
+    `l=uz`,
+    `c=${encodeURIComponent(`${returnUrl}/orders`)}`,
+  ].join(";");
+
+  const encoded = Buffer.from(params).toString("base64");
+  return `https://checkout.paycom.uz/${encoded}`;
+};
+
+const makeClickPaymentUrl = (order) => {
+  const merchantId = process.env.CLICK_MERCHANT_ID;
+  const serviceId = process.env.CLICK_SERVICE_ID;
+  if (!merchantId || !serviceId) return "";
+
+  const returnUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+  const params = new URLSearchParams({
+    service_id: String(serviceId),
+    merchant_id: String(merchantId),
+    amount: String(Number(order.totalPrice || 0)),
+    transaction_param: String(order._id),
+    return_url: `${returnUrl}/orders`,
+  });
+
+  return `https://my.click.uz/services/pay?${params.toString()}`;
+};
+
+const checkClickSign = (body) => {
+  const secretKey = process.env.CLICK_SECRET_KEY || "";
+
+  const {
+    click_trans_id,
+    service_id,
+    merchant_trans_id,
+    merchant_prepare_id,
+    amount,
+    action,
+    sign_time,
+    sign_string,
+  } = body;
+
+  const base = action === "1" || action === 1
+    ? `${click_trans_id}${service_id}${secretKey}${merchant_trans_id}${merchant_prepare_id}${amount}${action}${sign_time}`
+    : `${click_trans_id}${service_id}${secretKey}${merchant_trans_id}${amount}${action}${sign_time}`;
+
+  const calculated = crypto.createHash("md5").update(base).digest("hex");
+  return calculated === sign_string;
+};
+
+const FILIALS = {
+  rustaveli: {
+    name: "Yalpiz — Shota Rustaveli, 115",
+    address: "Shota Rustaveli ko'chasi, 115, Toshkent",
+    lat: 41.2995,
+    lng: 69.2401,
+  },
+  mvd: {
+    name: "Yalpiz MVD — Mirobod, 1/1",
+    address: "Mirobod ko'chasi, 1/1, Toshkent",
+    lat: 41.3015,
+    lng: 69.2850,
+  },
+};
+
+const makeSourceTime = () => {
+  const now = new Date();
+  return now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, "0") +
+    String(now.getDate()).padStart(2, "0") +
+    String(now.getHours()).padStart(2, "0") +
+    String(now.getMinutes()).padStart(2, "0") +
+    String(now.getSeconds()).padStart(2, "0");
 };
 
 const createFirstAdmin = async () => {
@@ -197,76 +319,175 @@ app.post("/api/orders", async (req, res) => {
     const { customerName, customerPhone, items, totalPrice, address, location, orderType, tableNumber, paymentType, filialId, filialName } = req.body;
     if (!customerName || !customerPhone || !items?.length)
       return res.status(400).json({ message: "Ism, telefon va taomlar shart!" });
+    const normalizedPaymentType = paymentType || "cash";
+
     const order = await new Order({
-      customerName, customerPhone, items, totalPrice, address, location,
+      customerName,
+      customerPhone,
+      items,
+      totalPrice,
+      address,
+      location,
       orderType: orderType || "delivery",
       tableNumber: tableNumber || "",
-      paymentType: paymentType || "cash",
+      paymentType: normalizedPaymentType,
+      paymentProvider: normalizedPaymentType,
+      paymentStatus: normalizedPaymentType === "cash" ? "unpaid" : "pending",
       filialId: filialId || null,
       filialName: filialName || null,
       status: "new"
     }).save();
 
-    // Millenium Taxi ga yuborish (faqat delivery bo'lsa)
-    if ((orderType === "delivery" || !orderType) && location && process.env.MILLENIUM_API_URL) {
+    if (normalizedPaymentType === "payme") {
+      order.paymentUrl = makePaymePaymentUrl(order);
+      await order.save();
+    }
+
+    if (normalizedPaymentType === "click") {
+      order.paymentUrl = makeClickPaymentUrl(order);
+      await order.save();
+    }
+
+    const normalizePhoneForMillenium = (phone) => {
+      if (!phone) return "";
+
+      let digits = String(phone).replace(/\D/g, "");
+
+      // 00998901234567 -> 998901234567
+      if (digits.startsWith("00")) {
+        digits = digits.slice(2);
+      }
+
+      // 901234567 -> 998901234567
+      if (digits.length === 9) {
+        digits = "998" + digits;
+      }
+
+      return digits;
+    };
+
+    // Millenium Taxi ga yuborish (create_order2, faqat delivery bo'lsa)
+    if (
+      process.env.MILLENIUM_ENABLED === "true" &&
+      (orderType === "delivery" || !orderType) &&
+      process.env.MILLENIUM_API_URL
+    ) {
       try {
         const crypto = require("crypto");
-        const milUrl = process.env.MILLENIUM_API_URL; // millennium.tm.taxi:8089
-        const apiKey = process.env.MILLENIUM_API_KEY || "";
-        const userId = process.env.MILLENIUM_USER_ID || "254";
-        const now = new Date();
-        const sourceTime = now.getFullYear().toString() +
-          String(now.getMonth()+1).padStart(2,"0") +
-          String(now.getDate()).padStart(2,"0") +
-          String(now.getHours()).padStart(2,"0") +
-          String(now.getMinutes()).padStart(2,"0") +
-          String(now.getSeconds()).padStart(2,"0");
 
-        const params = new URLSearchParams({
-          phone: customerPhone,
-          source: address || "",
+        const milUrl = process.env.MILLENIUM_API_URL;
+        const apiKey = process.env.MILLENIUM_API_KEY || "";
+        const userId = process.env.MILLENIUM_USER_ID || "";
+
+        const fullUrl = milUrl.startsWith("http") ? milUrl : `https://${milUrl}`;
+
+        const now = new Date();
+        const sourceTime =
+          now.getFullYear().toString() +
+          String(now.getMonth() + 1).padStart(2, "0") +
+          String(now.getDate()).padStart(2, "0") +
+          String(now.getHours()).padStart(2, "0") +
+          String(now.getMinutes()).padStart(2, "0") +
+          String(now.getSeconds()).padStart(2, "0");
+
+        const restaurantAddress =
+          process.env.RESTAURANT_ADDRESS || "Yalpiz restoran, Toshkent";
+
+        const restaurantLat = Number(process.env.RESTAURANT_LAT || 41.2995);
+        const restaurantLng = Number(process.env.RESTAURANT_LNG || 69.2401);
+
+        const milleniumPhone = normalizePhoneForMillenium(customerPhone);
+
+        console.log("Customer phone original:", customerPhone);
+        console.log("Customer phone Millenium:", milleniumPhone);
+
+        if (!milleniumPhone || milleniumPhone.length < 9) {
+          console.log("⚠️ Millenium order yuborilmadi: telefon raqam noto‘g‘ri yoki bo‘sh");
+          return;
+        }
+
+        // +998781295555
+
+        const payload = {
+          phone: milleniumPhone,
+          phone_to_dial: milleniumPhone,
           source_time: sourceTime,
+          is_prior: false,
+          check_duplicate: true,
           customer: customerName,
-          comment: `Yalpiz order #${order._id}`,
-          ...(location ? { source_lat: location.lat, source_lon: location.lng } : {})
+          passenger: customerName,
+          comment: `Yalpiz delivery order #${order._id}. To'lov: ${paymentType}. Jami: ${totalPrice} so'm`,
+          total_cost: Number(totalPrice) || 0,
+          addresses: [
+            {
+              address: restaurantAddress,
+              lat: restaurantLat,
+              lon: restaurantLng,
+            },
+            {
+              address: address || "Mijoz manzili",
+              lat: location?.lat ? Number(location.lat) : undefined,
+              lon: location?.lng ? Number(location.lng) : undefined,
+            },
+          ],
+        };
+
+        // undefined fieldlarni olib tashlash
+        payload.addresses = payload.addresses.map((addr) => {
+          const clean = {};
+          Object.keys(addr).forEach((key) => {
+            if (addr[key] !== undefined && addr[key] !== null && addr[key] !== "") {
+              clean[key] = addr[key];
+            }
+          });
+          return clean;
         });
 
-        const paramsStr = params.toString();
-        const signature = crypto.createHash("md5")
-          .update(paramsStr + apiKey)
+        const jsonBody = JSON.stringify(payload);
+
+        const signature = crypto
+          .createHash("md5")
+          .update(jsonBody + apiKey)
           .digest("hex");
 
-        // URL to'g'irlash: millennium.tm.taxi:8089 => http://millennium.tm.taxi:8089
-        const fullUrl = milUrl.startsWith("http") ? milUrl : `http://${milUrl}`;
-        const milRes = await fetch(`${fullUrl}/common_api/1.0/create_order`, {
+        const headers = {
+          "Content-Type": "application/json",
+          "Signature": signature,
+        };
+
+        if (userId) {
+          headers["X-User-Id"] = userId;
+        }
+
+        const milRes = await fetch(`${fullUrl}/common_api/1.0/create_order2`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Signature": signature,
-            "X-User-Id": userId
-          },
-          body: paramsStr,
-          timeout: 10000
+          headers,
+          body: jsonBody,
+          agent: fullUrl.startsWith("https") ? milleniumHttpsAgent : undefined,
         });
 
         const milData = await milRes.json();
-        console.log("Millenium response:", JSON.stringify(milData));
+        console.log("Millenium create_order2 response:", JSON.stringify(milData, null, 2));
 
         if (milData && milData.code === 0 && milData.data?.order_id) {
           order.milleniumOrderId = String(milData.data.order_id);
           await order.save();
           console.log("✅ Millenium order yaratildi:", order.milleniumOrderId);
         } else {
-          console.log("⚠️ Millenium order yaratilmadi:", milData?.descr);
+          console.log("⚠️ Millenium order yaratilmadi:", milData?.descr || milData);
         }
-      } catch(milErr) {
+      } catch (milErr) {
         console.error("⚠️ Millenium API xato:", milErr.message);
       }
     }
     const itemsList = items.map(i => `  • ${i.title} × ${i.quantity} = ${(i.price * i.quantity).toLocaleString()} so'm`).join("\n");
     const locText = location ? `\n🗺 <a href="https://yandex.com/maps/?pt=${location.lng},${location.lat}&z=16&l=map">Xaritada ko'rish</a>` : "";
     await sendTelegram(`🛎 <b>YANGI BUYURTMA!</b>\n\n👤 <b>${customerName}</b>\n📞 ${customerPhone}\n${address ? `📍 ${address}\n` : ""}${locText}\n\n🍽 <b>Taomlar:</b>\n${itemsList}\n\n💰 <b>Jami: ${totalPrice?.toLocaleString()} so'm</b>`);
-    res.status(201).json({ message: "Buyurtma qabul qilindi! ✅", order });
+    res.status(201).json({
+      message: "Buyurtma qabul qilindi! ✅",
+      order,
+      paymentUrl: order.paymentUrl || "",
+    });
   } catch (e) { res.status(500).json({ message: "Xato", error: e.message }); }
 });
 
@@ -301,6 +522,500 @@ app.put("/api/orders/:id/status", auth, async (req, res) => {
 app.delete("/api/orders/:id", auth, async (req, res) => {
   try { await Order.findByIdAndDelete(req.params.id); res.json({ message: "O'chirildi" }); }
   catch { res.status(500).json({ message: "Xato" }); }
+});
+
+// ════ PAYME MERCHANT API CALLBACK ═════════════════════════════════════════════
+app.post("/api/payments/payme", async (req, res) => {
+  const { method, params = {}, id } = req.body || {};
+
+  try {
+    if (!checkPaymeAuth(req)) {
+      return res.json(paymeError(id, -32504, "Недостаточно привилегий"));
+    }
+
+    const account = params.account || {};
+    const orderId = account.order_id;
+
+    if (method === "CheckPerformTransaction") {
+      const order = await Order.findById(orderId);
+
+      if (!order) {
+        return res.json(paymeError(id, -31050, "Заказ не найден", "order_id"));
+      }
+
+      if (toTiyin(order.totalPrice) !== Number(params.amount)) {
+        return res.json(paymeError(id, -31001, "Неверная сумма"));
+      }
+
+      if (order.paymentStatus === "paid") {
+        return res.json(paymeError(id, -31008, "Заказ уже оплачен"));
+      }
+
+      return res.json(paymeResult(id, { allow: true }));
+    }
+
+    if (method === "CreateTransaction") {
+      const order = await Order.findById(orderId);
+
+      if (!order) {
+        return res.json(paymeError(id, -31050, "Заказ не найден", "order_id"));
+      }
+
+      if (toTiyin(order.totalPrice) !== Number(params.amount)) {
+        return res.json(paymeError(id, -31001, "Неверная сумма"));
+      }
+
+      if (order.paymeTransactionId && order.paymeTransactionId !== params.id) {
+        return res.json(paymeError(id, -31008, "Нельзя создать новую транзакцию"));
+      }
+
+      if (!order.paymeTransactionId) {
+        order.paymeTransactionId = params.id;
+        order.paymentTransactionId = params.id;
+        order.paymeCreateTime = nowMs();
+        order.paymeState = 1;
+        order.paymentProvider = "payme";
+        order.paymentStatus = "pending";
+        await order.save();
+      }
+
+      return res.json(paymeResult(id, {
+        create_time: order.paymeCreateTime,
+        transaction: String(order._id),
+        state: order.paymeState,
+      }));
+    }
+
+    if (method === "PerformTransaction") {
+      const order = await Order.findOne({ paymeTransactionId: params.id });
+
+      if (!order) {
+        return res.json(paymeError(id, -31003, "Транзакция не найдена"));
+      }
+
+      if (order.paymeState === 2) {
+        return res.json(paymeResult(id, {
+          transaction: String(order._id),
+          perform_time: order.paymePerformTime,
+          state: 2,
+        }));
+      }
+
+      if (order.paymeState !== 1) {
+        return res.json(paymeError(id, -31008, "Невозможно выполнить операцию"));
+      }
+
+      order.paymePerformTime = nowMs();
+      order.paymeState = 2;
+      order.paymentStatus = "paid";
+      order.paymentProvider = "payme";
+      await order.save();
+
+      await sendTelegram(
+        `✅ <b>PAYME TO‘LOV QILINDI</b>\n\n` +
+        `👤 ${order.customerName}\n` +
+        `📞 ${order.customerPhone}\n` +
+        `💰 ${order.totalPrice?.toLocaleString()} so'm\n` +
+        `🧾 Order: ${order._id}`
+      );
+
+      return res.json(paymeResult(id, {
+        transaction: String(order._id),
+        perform_time: order.paymePerformTime,
+        state: 2,
+      }));
+    }
+
+    if (method === "CancelTransaction") {
+      const order = await Order.findOne({ paymeTransactionId: params.id });
+
+      if (!order) {
+        return res.json(paymeError(id, -31003, "Транзакция не найдена"));
+      }
+
+      if (order.paymeState === -1 || order.paymeState === -2) {
+        return res.json(paymeResult(id, {
+          transaction: String(order._id),
+          cancel_time: order.paymeCancelTime,
+          state: order.paymeState,
+        }));
+      }
+
+      order.paymeCancelTime = nowMs();
+      order.paymeState = order.paymeState === 2 ? -2 : -1;
+      order.paymentStatus = "cancelled";
+      await order.save();
+
+      return res.json(paymeResult(id, {
+        transaction: String(order._id),
+        cancel_time: order.paymeCancelTime,
+        state: order.paymeState,
+      }));
+    }
+
+    if (method === "CheckTransaction") {
+      const order = await Order.findOne({ paymeTransactionId: params.id });
+
+      if (!order) {
+        return res.json(paymeError(id, -31003, "Транзакция не найдена"));
+      }
+
+      return res.json(paymeResult(id, {
+        create_time: order.paymeCreateTime,
+        perform_time: order.paymePerformTime || 0,
+        cancel_time: order.paymeCancelTime || 0,
+        transaction: String(order._id),
+        state: order.paymeState,
+        reason: null,
+      }));
+    }
+
+    return res.json(paymeError(id, -32601, "Метод не найден"));
+  } catch (e) {
+    console.error("Payme callback xato:", e.message);
+    return res.json(paymeError(id, -32400, "Системная ошибка"));
+  }
+});
+
+// ════ CLICK SHOP API CALLBACKS ════════════════════════════════════════════════
+const clickOk = (data) => ({
+  error: 0,
+  error_note: "Success",
+  ...data,
+});
+
+const clickError = (code, note, data = {}) => ({
+  error: code,
+  error_note: note,
+  ...data,
+});
+
+app.post("/api/payments/click/prepare", async (req, res) => {
+  try {
+    const body = req.body || {};
+    console.log("Click prepare:", body);
+
+    if (String(body.service_id) !== String(process.env.CLICK_SERVICE_ID)) {
+      return res.json(clickError(-2, "Incorrect service_id"));
+    }
+
+    if (!checkClickSign(body)) {
+      return res.json(clickError(-1, "SIGN CHECK FAILED!"));
+    }
+
+    if (String(body.action) !== "0") {
+      return res.json(clickError(-3, "Action not found"));
+    }
+
+    const order = await Order.findById(body.merchant_trans_id);
+
+    if (!order) {
+      return res.json(clickError(-5, "Order not found"));
+    }
+
+    if (Number(order.totalPrice) !== Number(body.amount)) {
+      return res.json(clickError(-2, "Incorrect amount"));
+    }
+
+    if (order.paymentStatus === "paid") {
+      return res.json(clickError(-4, "Already paid"));
+    }
+
+    order.paymentProvider = "click";
+    order.paymentStatus = "pending";
+    order.clickTransId = String(body.click_trans_id || "");
+    order.clickPaydocId = String(body.click_paydoc_id || "");
+    order.clickPrepareId = String(order._id);
+    order.paymentTransactionId = String(body.click_trans_id || "");
+    await order.save();
+
+    return res.json(clickOk({
+      click_trans_id: body.click_trans_id,
+      merchant_trans_id: body.merchant_trans_id,
+      merchant_prepare_id: String(order._id),
+    }));
+  } catch (e) {
+    console.error("Click prepare xato:", e.message);
+    return res.json(clickError(-9, "System error"));
+  }
+});
+
+app.post("/api/payments/click/complete", async (req, res) => {
+  try {
+    const body = req.body || {};
+    console.log("Click complete:", body);
+
+    if (String(body.service_id) !== String(process.env.CLICK_SERVICE_ID)) {
+      return res.json(clickError(-2, "Incorrect service_id"));
+    }
+
+    if (!checkClickSign(body)) {
+      return res.json(clickError(-1, "SIGN CHECK FAILED!"));
+    }
+
+    if (String(body.action) !== "1") {
+      return res.json(clickError(-3, "Action not found"));
+    }
+
+    const order = await Order.findById(body.merchant_trans_id);
+
+    if (!order) {
+      return res.json(clickError(-5, "Order not found"));
+    }
+
+    if (String(body.error) !== "0") {
+      order.paymentStatus = "failed";
+      await order.save();
+
+      return res.json(clickError(Number(body.error), body.error_note || "Click payment failed", {
+        click_trans_id: body.click_trans_id,
+        merchant_trans_id: body.merchant_trans_id,
+        merchant_confirm_id: String(order._id),
+      }));
+    }
+
+    if (Number(order.totalPrice) !== Number(body.amount)) {
+      return res.json(clickError(-2, "Incorrect amount"));
+    }
+
+    order.paymentProvider = "click";
+    order.paymentStatus = "paid";
+    order.clickCompleteId = String(body.click_trans_id || "");
+    order.paymentTransactionId = String(body.click_trans_id || "");
+    await order.save();
+
+    await sendTelegram(
+      `✅ <b>CLICK TO‘LOV QILINDI</b>\n\n` +
+      `👤 ${order.customerName}\n` +
+      `📞 ${order.customerPhone}\n` +
+      `💰 ${order.totalPrice?.toLocaleString()} so'm\n` +
+      `🧾 Order: ${order._id}`
+    );
+
+    return res.json(clickOk({
+      click_trans_id: body.click_trans_id,
+      merchant_trans_id: body.merchant_trans_id,
+      merchant_confirm_id: String(order._id),
+    }));
+  } catch (e) {
+    console.error("Click complete xato:", e.message);
+    return res.json(clickError(-9, "System error"));
+  }
+});
+
+// ════ MILLENIUM WEBHOOK ═══════════════════════════════════════════════════════
+const pick = (...values) => {
+  return values.find(v => v !== undefined && v !== null && String(v).trim() !== "");
+};
+
+const parseIds = (envName) => {
+  return (process.env[envName] || "")
+    .split(",")
+    .map(x => x.trim())
+    .filter(Boolean);
+};
+
+const mapMilleniumStatus = (payload) => {
+  const data = payload.data || {};
+
+  const stateId = String(pick(
+    payload.state_id,
+    payload.stateId,
+    payload.status_id,
+    data.state_id,
+    data.stateId,
+    data.status_id,
+    ""
+  ));
+
+  const stateText = String(pick(
+    payload.state,
+    payload.status,
+    payload.status_name,
+    data.state,
+    data.status,
+    data.status_name,
+    ""
+  )).toLowerCase();
+
+  const preparingIds = parseIds("MILLENIUM_PREPARING_STATE_IDS");
+  const deliveredIds = parseIds("MILLENIUM_DELIVERED_STATE_IDS");
+  const cancelledIds = parseIds("MILLENIUM_CANCELLED_STATE_IDS");
+
+  if (cancelledIds.includes(stateId)) return "cancelled";
+  if (deliveredIds.includes(stateId)) return "delivered";
+  if (preparingIds.includes(stateId)) return "preparing";
+
+  if (
+    stateText.includes("cancel") ||
+    stateText.includes("отмен") ||
+    stateText.includes("bekor")
+  ) {
+    return "cancelled";
+  }
+
+  if (
+    stateText.includes("delivered") ||
+    stateText.includes("complete") ||
+    stateText.includes("выполн") ||
+    stateText.includes("заверш") ||
+    stateText.includes("достав")
+  ) {
+    return "delivered";
+  }
+
+  if (
+    stateText.includes("driver") ||
+    stateText.includes("assigned") ||
+    stateText.includes("экипаж") ||
+    stateText.includes("назнач") ||
+    stateText.includes("way") ||
+    stateText.includes("в пути")
+  ) {
+    return "preparing";
+  }
+
+  return null;
+};
+
+app.get("/webhook/millenium", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Millenium webhook ishlayapti ✅",
+    method: "POST"
+  });
+});
+
+app.post("/webhook/millenium", async (req, res) => {
+  try {
+    console.log("📩 Millenium webhook:", JSON.stringify(req.body, null, 2));
+
+    const body = req.body || {};
+    const data = body.data || {};
+
+    const milleniumOrderId = String(pick(
+      body.order_id,
+      body.orderId,
+      body.id_order,
+      body.milleniumOrderId,
+      data.order_id,
+      data.orderId,
+      data.id_order,
+      data.milleniumOrderId,
+      ""
+    ));
+
+    if (!milleniumOrderId) {
+      return res.json({
+        ok: false,
+        message: "Millenium order_id topilmadi",
+        received: body
+      });
+    }
+
+    const driverName = pick(
+      body.driver_name,
+      body.driverName,
+      body.driver?.name,
+      data.driver_name,
+      data.driverName,
+      data.driver?.name,
+      data.crew?.driver_name,
+      data.crew?.driverName
+    );
+
+    const driverPhone = pick(
+      body.driver_phone,
+      body.driverPhone,
+      body.driver?.phone,
+      data.driver_phone,
+      data.driverPhone,
+      data.driver?.phone,
+      data.crew?.driver_phone,
+      data.crew?.driverPhone
+    );
+
+    const carModel = pick(
+      body.car_model,
+      body.carModel,
+      body.car?.model,
+      data.car_model,
+      data.carModel,
+      data.car?.model,
+      data.crew?.car_model,
+      data.crew?.carModel
+    );
+
+    const driverLat = pick(
+      body.driver_lat,
+      body.driverLat,
+      body.driverLocation?.lat,
+      data.driver_lat,
+      data.driverLat,
+      data.driverLocation?.lat,
+      data.crew?.lat
+    );
+
+    const driverLng = pick(
+      body.driver_lon,
+      body.driver_lng,
+      body.driverLng,
+      body.driverLocation?.lng,
+      data.driver_lon,
+      data.driver_lng,
+      data.driverLng,
+      data.driverLocation?.lng,
+      data.crew?.lon,
+      data.crew?.lng
+    );
+
+    const mappedStatus = mapMilleniumStatus(body);
+
+    const update = {};
+
+    if (driverName) update.driverName = String(driverName);
+    if (driverPhone) update.driverPhone = String(driverPhone);
+    if (carModel) update.carModel = String(carModel);
+
+    if (driverLat && driverLng) {
+      update.driverLocation = {
+        lat: Number(driverLat),
+        lng: Number(driverLng),
+      };
+    }
+
+    if (mappedStatus) {
+      update.status = mappedStatus;
+    }
+
+    const order = await Order.findOneAndUpdate(
+      { milleniumOrderId },
+      { $set: update },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.json({
+        ok: false,
+        message: "Bu Millenium order_id bilan lokal order topilmadi",
+        milleniumOrderId
+      });
+    }
+
+    console.log("✅ Millenium webhook order yangilandi:", order._id);
+
+    res.json({
+      ok: true,
+      message: "Order yangilandi",
+      order
+    });
+  } catch (e) {
+    console.error("Millenium webhook xato:", e.message);
+    res.status(500).json({
+      ok: false,
+      message: e.message
+    });
+  }
 });
 
 // ════ BANNERS (ko'p banner, slider) ══════════════════════════════════════════

@@ -98,11 +98,27 @@ export default function CartPage() {
         }),
       });
       if (res.ok) {
+        const data = await res.json();
+
         const p = getProfile();
-        if (!p.name) localStorage.setItem("profile", JSON.stringify({...p, name:form.name, phone:fullPhone}));
-        localStorage.removeItem("cart"); window.dispatchEvent(new Event("cartUpdated"));
-        setCart([]); setStep("success");
-      } else { const d = await res.json(); alert(d.message || "Xatolik!"); }
+        if (!p.name) {
+          localStorage.setItem("profile", JSON.stringify({...p, name:form.name, phone:fullPhone}));
+        }
+
+        localStorage.removeItem("cart");
+        window.dispatchEvent(new Event("cartUpdated"));
+        setCart([]);
+
+        if (data.paymentUrl) {
+          window.location.href = data.paymentUrl;
+          return;
+        }
+
+        setStep("success");
+      } else {
+        const d = await res.json();
+        alert(d.message || "Xatolik!");
+      }
     } catch { alert("Server xatosi!"); }
     finally { setOrderLoading(false); }
   };
@@ -256,11 +272,17 @@ export default function CartPage() {
               <div style={{display:"flex",gap:12}}>
                 <div className={`payment-card ${paymentType==="cash"?"selected":""}`} onClick={() => setPaymentType("cash")}>
                   <span style={{fontSize:"2rem"}}>💵</span>
-                  <span className="payment-label">{t.cash}</span>
+                  <span className="payment-label">Naqd</span>
                 </div>
-                <div className={`payment-card ${paymentType==="card"?"selected":""}`} onClick={() => setPaymentType("card")}>
-                  <span style={{fontSize:"2rem"}}>💳</span>
-                  <span className="payment-label">{t.card}</span>
+
+                <div className={`payment-card ${paymentType==="click"?"selected":""}`} onClick={() => setPaymentType("click")}>
+                  <span style={{fontSize:"2rem"}}>🟦</span>
+                  <span className="payment-label">Click</span>
+                </div>
+
+                <div className={`payment-card ${paymentType==="payme"?"selected":""}`} onClick={() => setPaymentType("payme")}>
+                  <span style={{fontSize:"2rem"}}>🟩</span>
+                  <span className="payment-label">Payme</span>
                 </div>
               </div>
               <div className="cp-footer" style={{marginTop:16}}>

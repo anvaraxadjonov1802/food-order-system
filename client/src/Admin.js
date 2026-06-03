@@ -568,6 +568,29 @@ export default function Admin() {
                         {order.orderType === "dine_in" && order.tableNumber && (
                           <span className="order-address">🍽 Restoran — Stol №{order.tableNumber}</span>
                         )}
+                        {order.orderType === "delivery" && (
+                          <span className={`millenium-badge ${order.milleniumOrderId ? "success" : "pending"}`}>
+                            🚕 Millenium: {order.milleniumOrderId ? `#${order.milleniumOrderId}` : "yuborilmagan"}
+                            {(order.driverName || order.driverPhone || order.carModel) && (
+                              <div className="driver-info-box">
+                                <div className="driver-info-title">🚗 Kuryer ma'lumotlari</div>
+                                {order.driverName && <div>👤 {order.driverName}</div>}
+                                {order.driverPhone && <div>📞 {order.driverPhone}</div>}
+                                {order.carModel && <div>🚙 {order.carModel}</div>}
+                                {order.driverLocation?.lat && (
+                                  <a
+                                    href={`https://yandex.com/maps/?pt=${order.driverLocation.lng},${order.driverLocation.lat}&z=16&l=map`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    🗺 Kuryerni xaritada ko‘rish
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </span>
+
+                        )}
                       </div>
                       <div className="order-right">
                         <span className="order-status-badge"
@@ -576,7 +599,15 @@ export default function Admin() {
                         </span>
                         {order.paymentType && (
                           <span style={{ fontSize: "0.72rem", color: "#888", display: "block", marginTop: 2 }}>
-                            {order.paymentType === "cash" ? "💵 Naqd" : "💳 Karta"}
+                            {order.paymentType === "cash" && "💵 Naqd"}
+                            {order.paymentType === "click" && "🟦 Click"}
+                            {order.paymentType === "payme" && "🟩 Payme"}
+                            {order.paymentType === "card" && "💳 Karta"}
+                            {order.paymentStatus && (
+                              <span className={`millenium-badge ${order.paymentStatus === "paid" ? "success" : "pending"}`}>
+                                To‘lov: {order.paymentStatus}
+                              </span>
+                            )}
                           </span>
                         )}
                         <span className="order-date">{new Date(order.createdAt).toLocaleString("uz-UZ")}</span>
