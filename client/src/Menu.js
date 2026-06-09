@@ -6,7 +6,7 @@ import { getLang, setLangStore, TRANSLATIONS, LOGO_GREEN, LOGO_WHITE } from "./i
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const CAT_EMOJI = {
-  "asosiy menu":"🍽",
+  "asosiy menu":"🍽","asosiy menyu":"🍽","asosiy taomlar":"🍽",
   "fast food":"🍔","burger":"🍔","pizza":"🍕","salat":"🥗","salatlar":"🥗",
   "desert":"🍦","desertlar":"🍦","ichimliklar":"🥤","sho'rvalar":"🍲",
   "hamir ovqat":"🥟","grill":"🔥","quyuq ovqat":"🍛","ikkinchi taomlar":"🍛",
@@ -15,7 +15,6 @@ const CAT_EMOJI = {
 };
 
 const CATEGORY_ORDER = [
-  "Asosiy menu",
   "Birinchi taomlar", "Suyuq taomlar", "Sho'rvalar",
   "Quyuq ovqat", "Ikkinchi taomlar", "Go'shtli asortiment",
   "Grill", "Hamir ovqat", "Pide",
@@ -23,8 +22,14 @@ const CATEGORY_ORDER = [
   "Ichimliklar", "Bar", "Desertlar", "Desert"
 ];
 
-const normalizeCat = (v) => String(v || "").toLowerCase().trim();
-const getEmoji = (cat) => CAT_EMOJI[cat?.toLowerCase()] || CAT_EMOJI.default;
+const normalizeCat = (v) =>
+  String(v || "")
+    .toLowerCase()
+    .replace(/[’‘`ʻʼ]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getEmoji = (cat) => CAT_EMOJI[normalizeCat(cat)] || CAT_EMOJI.default;
 const getField = (field, lang) => {
   if (!field) return "";
   if (typeof field === "string") return field;
@@ -34,8 +39,12 @@ const getField = (field, lang) => {
 const getCatKey = (cat) => typeof cat === "object" ? cat.uz : cat;
 const getCategoryRank = (cat) => {
   const key = normalizeCat(getCatKey(cat));
+
+  // "Asosiy menu", "Asosiy menyu", "Asosiy taomlar" kabi nomlar har doim birinchi chiqadi
+  if (key.includes("asosiy")) return 0;
+
   const idx = CATEGORY_ORDER.findIndex(c => normalizeCat(c) === key);
-  return idx === -1 ? 999 : idx;
+  return idx === -1 ? 999 : idx + 1;
 };
 const sortCategories = (cats) => [...cats].sort((a, b) => {
   const rankA = getCategoryRank(a);
