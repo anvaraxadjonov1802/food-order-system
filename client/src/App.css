@@ -781,3 +781,37 @@ h1, h2, h3, h4, h5, h6 {
 }
 .btn-unavailable { background: #fee2e2; color: #991b1b; }
 .btn-available { background: #d1fae5; color: #065f46; }
+
+
+
+/* Real Click / Payme logo images */
+.payment-logo-img {
+  width: 132px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+}
+
+.click-logo-img {
+  max-width: 118px;
+}
+
+.payme-logo-img {
+  max-width: 140px;
+}
+
+.payment-card {
+  min-height: 118px;
+}
+
+.payment-card-click,
+.payment-card-payme {
+  justify-content: center;
+}
+
+@media(max-width:420px){
+  .payment-logo-img {
+    width: 145px;
+    height: 44px;
+  }
+}
