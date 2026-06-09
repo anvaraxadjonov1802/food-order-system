@@ -45,6 +45,26 @@ const getField = (f, lang = "uz") => {
   return f[lang] || f.uz || f.ru || f.en || "";
 };
 
+const CATEGORY_ORDER = [
+  "Birinchi taomlar", "Suyuq taomlar", "Sho'rvalar",
+  "Quyuq ovqat", "Ikkinchi taomlar", "Go'shtli asortiment",
+  "Grill", "Hamir ovqat", "Pide",
+  "Salatlar", "Fast food", "Burger", "Pizza",
+  "Ichimliklar", "Bar", "Desertlar", "Desert"
+];
+const normalizeCat = (v) => String(v || "").toLowerCase().trim();
+const getCategoryRank = (cat) => {
+  const key = normalizeCat(getField(cat, "uz"));
+  const idx = CATEGORY_ORDER.findIndex(c => normalizeCat(c) === key);
+  return idx === -1 ? 999 : idx;
+};
+const sortCategories = (cats) => [...cats].sort((a, b) => {
+  const rankA = getCategoryRank(a);
+  const rankB = getCategoryRank(b);
+  if (rankA !== rankB) return rankA - rankB;
+  return normalizeCat(getField(a, "uz")).localeCompare(normalizeCat(getField(b, "uz")));
+});
+
 const LANGS = ["uz", "ru", "en"];
 const LANG_LABELS = { uz: "🇺🇿 O'zbek", ru: "🇷🇺 Русский", en: "🇬🇧 English" };
 
@@ -111,7 +131,7 @@ export default function Admin() {
           const key = getField(f.category, "uz");
           if (key && !cats.find(c => getField(c, "uz") === key)) cats.push(f.category);
         });
-        setCategories(cats);
+        setCategories(sortCategories(cats));
       }
     } catch {}
   };
@@ -196,7 +216,7 @@ export default function Admin() {
       ru: catNames.ru.trim() || catNames.uz.trim(),
       en: catNames.en.trim() || catNames.uz.trim(),
     };
-    setCategories(prev => [...prev, newCat]);
+    setCategories(prev => sortCategories([...prev, newCat]));
     setSelectedCat(newCat);
     setCatNames({ uz: "", ru: "", en: "" });
     setShowCatInput(false);
