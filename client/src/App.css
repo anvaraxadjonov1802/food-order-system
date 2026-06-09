@@ -815,3 +815,21 @@ h1, h2, h3, h4, h5, h6 {
     height: 44px;
   }
 }
+
+/* Millenium exact delivery price */
+.delivery-price-ok {
+  color: #15803d !important;
+  font-weight: 900;
+}
+.delivery-price-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.delivery-price-box.compact .delivery-price-error {
+  margin-top: 2px;
+}

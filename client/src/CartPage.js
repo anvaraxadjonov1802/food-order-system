@@ -22,27 +22,6 @@ const FILIALS = [
   { id: "mvd",       name: "Yalpiz MVD — Mirobod, 1/1",    address: "Mirobod ko'chasi, 1/1, Toshkent",    lat: 41.3015, lng: 69.2850 },
 ];
 
-const DELIVERY_BASE_PRICE = 10000;
-const DELIVERY_PRICE_PER_KM = 3000;
-const DELIVERY_MIN_PRICE = 12000;
-
-const calcDistanceKm = (a, b) => {
-  if (!a || !b) return 0;
-  const toRad = (v) => (Number(v) * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-};
-
-const calcDeliveryPrice = (km) => {
-  if (!km) return 0;
-  return Math.max(DELIVERY_MIN_PRICE, Math.round((DELIVERY_BASE_PRICE + km * DELIVERY_PRICE_PER_KM) / 1000) * 1000);
-};
-
 const paymentLabel = (type) => {
   if (type === "click") return "Click";
   if (type === "payme") return "Payme";
@@ -70,13 +49,23 @@ export default function CartPage() {
   const [savedAddr, setSavedAddr] = useState(getSaved);
   const [selectedFilial, setSelectedFilial] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [deliveryPrice, setDeliveryPrice] = useState(0);
+  const [deliveryPriceLoading, setDeliveryPriceLoading] = useState(false);
+  const [deliveryPriceError, setDeliveryPriceError] = useState("");
 
   const total = cart.reduce((s,i) => s+i.price*i.qty, 0);
   const count = cart.reduce((s,i) => s+i.qty, 0);
-  const distanceKm = orderType === "delivery" && selectedFilial && location
-    ? calcDistanceKm({ lat: selectedFilial.lat, lng: selectedFilial.lng }, location)
-    : 0;
-  const deliveryPrice = calcDeliveryPrice(distanceKm);
+
+  const getDeliveryPriceText = () => {
+    if (orderType !== "delivery") return "";
+    if (!selectedFilial) return "Filial tanlang";
+    if (!location) return "Lokatsiya tanlang";
+    if (!isValid(form.phoneFormatted)) return "Telefonni to‘liq kiriting";
+    if (deliveryPriceLoading) return "Millenium hisoblamoqda...";
+    if (deliveryPriceError) return "Narx olinmadi";
+    if (deliveryPrice) return `${deliveryPrice.toLocaleString()} so'm`;
+    return "Hisoblanmoqda...";
+  };
 
   useEffect(() => { saveCart(cart); }, [cart]);
   useEffect(() => {
@@ -84,6 +73,61 @@ export default function CartPage() {
     window.addEventListener("langChanged", onLang);
     return () => window.removeEventListener("langChanged", onLang);
   }, []);
+
+  useEffect(() => {
+    const canCalculate =
+      orderType === "delivery" &&
+      selectedFilial?.id &&
+      location?.lat &&
+      location?.lng &&
+      isValid(form.phoneFormatted);
+
+    if (!canCalculate) {
+      setDeliveryPrice(0);
+      setDeliveryPriceError("");
+      setDeliveryPriceLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setDeliveryPriceLoading(true);
+      setDeliveryPriceError("");
+
+      try {
+        const res = await fetch(`${API}/api/millenium/calc-price`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filialId: selectedFilial.id,
+            customerPhone: rawPhone(form.phoneFormatted),
+            location,
+          }),
+        });
+
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (!res.ok || !data.success || !data.price) {
+          throw new Error(data.message || "Millenium narxini qaytarmadi");
+        }
+
+        setDeliveryPrice(Number(data.price));
+      } catch (err) {
+        if (!cancelled) {
+          setDeliveryPrice(0);
+          setDeliveryPriceError(err.message || "Taxi narxini hisoblab bo‘lmadi");
+        }
+      } finally {
+        if (!cancelled) setDeliveryPriceLoading(false);
+      }
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [orderType, selectedFilial?.id, location?.lat, location?.lng, form.phoneFormatted]);
 
   const changeQty = (id,d) => setCart(p => p.map(i => i._id===id ? {...i,qty:Math.max(1,i.qty+d)} : i));
   const removeItem = (id) => setCart(p => p.filter(i => i._id!==id));
@@ -114,6 +158,9 @@ export default function CartPage() {
     if (!selectedFilial) { alert("Filialni tanlang!"); return; }
     if (orderType==="dine_in" && !tableNumber.trim()) { alert("Stol raqamini kiriting!"); return; }
     if (orderType==="delivery" && !form.address.trim()) { alert("Manzilni kiriting!"); return; }
+    if (orderType==="delivery" && !location) { alert("Aniq taxi narxi uchun lokatsiyani aniqlang!"); return; }
+    if (orderType==="delivery" && deliveryPriceLoading) { alert("Taxi narxi hali Milleniumdan hisoblanmoqda. Biroz kuting."); return; }
+    if (orderType==="delivery" && !deliveryPrice) { alert(deliveryPriceError || "Taxi narxini Milleniumdan olish kerak."); return; }
     const unavailableItem = cart.find(i => i.isAvailable === false);
     if (unavailableItem) { alert(`${getField(unavailableItem.title, lang)} hozircha mavjud emas. Iltimos, savatdan olib tashlang.`); return; }
     setOrderLoading(true);
@@ -133,6 +180,7 @@ export default function CartPage() {
           filialName: selectedFilial?.name || null,
           items: cart.map(i => ({ foodId:i._id, title:getField(i.title, lang), price:i.price, quantity:i.qty })),
           totalPrice: total,
+          deliveryPrice: orderType === "delivery" ? deliveryPrice : 0,
         }),
       });
       if (res.ok) {
@@ -347,8 +395,9 @@ export default function CartPage() {
             {orderType === "delivery" && (
               <div className="delivery-price-box compact">
                 <div className="delivery-price-row"><span>Taomlar narxi:</span><strong>{total.toLocaleString()} so'm</strong></div>
-                <div className="delivery-price-row"><span>Taxi narxi:</span><strong>{deliveryPrice ? `${deliveryPrice.toLocaleString()} so'm` : "Lokatsiya tanlang"}</strong></div>
-                <div className="delivery-price-note">Taxi narxi online to‘lovga qo‘shilmaydi.</div>
+                <div className="delivery-price-row"><span>Taxi narxi (Millenium):</span><strong className={deliveryPrice ? "delivery-price-ok" : ""}>{getDeliveryPriceText()}</strong></div>
+                {deliveryPriceError && <div className="delivery-price-error">⚠️ {deliveryPriceError}</div>}
+                <div className="delivery-price-note">Taxi narxi online to‘lovga qo‘shilmaydi. Mijoz haydovchiga alohida to‘laydi.</div>
               </div>
             )}
 
@@ -402,10 +451,10 @@ export default function CartPage() {
                 {location && <a href={`https://yandex.com/maps/?pt=${location.lng},${location.lat}&z=16&l=map`} target="_blank" rel="noreferrer" className="cp-map-link">{t.viewOnMap}</a>}
                 {location && selectedFilial && (
                   <div className="delivery-price-box">
-                    <div className="delivery-price-title">🚕 Yetkazish narxi mijoz tomonidan alohida to‘lanadi</div>
+                    <div className="delivery-price-title">🚕 Millenium hisoblagan aniq taxi narxi</div>
                     <div className="delivery-price-row"><span>Filial:</span><strong>{selectedFilial.name}</strong></div>
-                    <div className="delivery-price-row"><span>Masofa:</span><strong>{distanceKm.toFixed(1)} km</strong></div>
-                    <div className="delivery-price-row"><span>Taxminiy taxi:</span><strong>{deliveryPrice.toLocaleString()} so'm</strong></div>
+                    <div className="delivery-price-row"><span>Taxi narxi:</span><strong className={deliveryPrice ? "delivery-price-ok" : ""}>{getDeliveryPriceText()}</strong></div>
+                    {deliveryPriceError && <div className="delivery-price-error">⚠️ {deliveryPriceError}</div>}
                     <div className="delivery-price-note">Online to‘lovga faqat taomlar narxi yuboriladi. Taxi pulini mijoz haydovchiga alohida to‘laydi.</div>
                   </div>
                 )}
@@ -418,7 +467,7 @@ export default function CartPage() {
               </>
             )}
 
-            <button type="submit" className="cp-submit-btn" disabled={orderLoading}>
+            <button type="submit" className="cp-submit-btn" disabled={orderLoading || (orderType === "delivery" && (deliveryPriceLoading || !deliveryPrice))}>
               {orderLoading ? t.sending : t.confirmOrder}
             </button>
           </form>
