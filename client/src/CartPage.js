@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, TRANSLATIONS } from "./i18n";
 
+import paymeLogo from "./assets/payme-logo.png";
+import clickLogo from "./assets/click-logo.png";
+
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 const getCart = () => { try { return JSON.parse(localStorage.getItem("cart") || "[]"); } catch { return []; } };
 const saveCart = (c) => { localStorage.setItem("cart", JSON.stringify(c)); window.dispatchEvent(new Event("cartUpdated")); };
@@ -306,13 +309,13 @@ export default function CartPage() {
               <p className="cp-section-q" style={{marginTop:20}}>{t.paymentTitle}</p>
               <div className="payment-options">
                 <div className={`payment-card payment-card-click ${paymentType==="click"?"selected":""}`} onClick={() => setPaymentType("click")}>
-                  <span className="payment-logo click-logo">CLICK</span>
+                  <img src={clickLogo} alt="Click" className="payment-logo-img click-logo-img" />
                   <span className="payment-label">Click</span>
                   <span className="payment-desc">Online to‘lov</span>
                 </div>
 
                 <div className={`payment-card payment-card-payme ${paymentType==="payme"?"selected":""}`} onClick={() => setPaymentType("payme")}>
-                  <span className="payment-logo payme-logo">payme</span>
+                  <img src={paymeLogo} alt="Payme" className="payment-logo-img payme-logo-img" />
                   <span className="payment-label">Payme</span>
                   <span className="payment-desc">Online to‘lov</span>
                 </div>
