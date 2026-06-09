@@ -68,19 +68,33 @@ const toTiyin = (amount) => Math.round(Number(amount || 0) * 100);
 
 const nowMs = () => Date.now();
 
-const paymeError = (id, code, message, data = null) => ({
-  jsonrpc: "2.0",
-  id,
-  error: {
-    code,
-    message: {
-      uz: message,
-      ru: message,
-      en: message,
+// const paymeError = (id, code, message, data = null) => ({
+//   jsonrpc: "2.0",
+//   id,
+//   error: {
+//     code,
+//     message: {
+//       uz: message,
+//       ru: message,
+//       en: message,
+//     },
+//     data,
+//   },
+// });
+
+const paymeError = (id, code, message, data = null) => {
+  console.log("PAYME ERROR:", code, message, data);
+
+  return {
+    jsonrpc: "2.0",
+    id,
+    error: {
+      code,
+      message: String(message),
+      data,
     },
-    data,
-  },
-});
+  };
+};
 
 const paymeResult = (id, result) => ({
   jsonrpc: "2.0",
@@ -526,6 +540,8 @@ app.delete("/api/orders/:id", auth, async (req, res) => {
 
 // ════ PAYME MERCHANT API CALLBACK ═════════════════════════════════════════════
 app.post("/api/payments/payme", async (req, res) => {
+  console.log("PAYME headers auth exists:", !!req.headers.authorization);
+  console.log("PAYME body:", JSON.stringify(req.body, null, 2));
   const { method, params = {}, id } = req.body || {};
 
   try {
