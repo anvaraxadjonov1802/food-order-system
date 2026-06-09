@@ -12,6 +12,12 @@ const OrderSchema = new mongoose.Schema({
   totalPrice:  { type: Number },
   address:     { type: String, default: "" },
   location:    { lat: Number, lng: Number },
+
+  // Delivery / Millenium exact price
+  deliveryPrice: { type: Number, default: 0 },
+  deliveryPriceSource: { type: String, default: "" },
+  deliveryPriceCalculatedAt: { type: Date, default: null },
+  deliveryPriceRaw: { type: mongoose.Schema.Types.Mixed, default: null },
   orderType:   { type: String, enum: ["dine_in", "delivery"], default: "delivery" },
   tableNumber: { type: String, default: "" },
   paymentType: {
