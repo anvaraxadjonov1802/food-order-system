@@ -6,6 +6,7 @@ import { getLang, setLangStore, TRANSLATIONS, LOGO_GREEN, LOGO_WHITE } from "./i
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const CAT_EMOJI = {
+  "asosiy menu":"🍽",
   "fast food":"🍔","burger":"🍔","pizza":"🍕","salat":"🥗","salatlar":"🥗",
   "desert":"🍦","desertlar":"🍦","ichimliklar":"🥤","sho'rvalar":"🍲",
   "hamir ovqat":"🥟","grill":"🔥","quyuq ovqat":"🍛","ikkinchi taomlar":"🍛",
@@ -14,6 +15,7 @@ const CAT_EMOJI = {
 };
 
 const CATEGORY_ORDER = [
+  "Asosiy menu",
   "Birinchi taomlar", "Suyuq taomlar", "Sho'rvalar",
   "Quyuq ovqat", "Ikkinchi taomlar", "Go'shtli asortiment",
   "Grill", "Hamir ovqat", "Pide",
