@@ -576,7 +576,8 @@ app.post("/api/payments/payme", async (req, res) => {
       const order = await Order.findById(orderId);
 
       if (!order) {
-        return res.json(paymeError(id, -31050, "Заказ не найден", "order_id"));
+        // return res.json(paymeError(id, -31050, "Заказ не найден", "order_id"));
+        return res.json(paymeError(id, -31050, "Заказ не найден", "order_num"));
       }
 
       if (toTiyin(order.totalPrice) !== Number(params.amount)) {
