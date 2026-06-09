@@ -15,9 +15,37 @@ const isValid = (f) => f.replace(/\s/g,"").length===9;
 
 
 const FILIALS = [
+  // Haqiqiy koordinatalarni Google/Yandex linkdan aniqlab, shu yerda almashtiramiz
   { id: "rustaveli", name: "Yalpiz — Shota Rustaveli, 115", address: "Shota Rustaveli ko'chasi, 115, Toshkent", lat: 41.2995, lng: 69.2401 },
   { id: "mvd",       name: "Yalpiz MVD — Mirobod, 1/1",    address: "Mirobod ko'chasi, 1/1, Toshkent",    lat: 41.3015, lng: 69.2850 },
 ];
+
+const DELIVERY_BASE_PRICE = 10000;
+const DELIVERY_PRICE_PER_KM = 3000;
+const DELIVERY_MIN_PRICE = 12000;
+
+const calcDistanceKm = (a, b) => {
+  if (!a || !b) return 0;
+  const toRad = (v) => (Number(v) * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+};
+
+const calcDeliveryPrice = (km) => {
+  if (!km) return 0;
+  return Math.max(DELIVERY_MIN_PRICE, Math.round((DELIVERY_BASE_PRICE + km * DELIVERY_PRICE_PER_KM) / 1000) * 1000);
+};
+
+const paymentLabel = (type) => {
+  if (type === "click") return "Click";
+  if (type === "payme") return "Payme";
+  return "Online";
+};
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -27,7 +55,7 @@ export default function CartPage() {
   const [step, setStep] = useState("cart"); // cart → type → form → success
   const [orderType, setOrderType] = useState(null); // "dine_in" | "delivery"
   const [tableNumber, setTableNumber] = useState("");
-  const [paymentType, setPaymentType] = useState("cash"); // "cash" | "card"
+  const [paymentType, setPaymentType] = useState("click"); // "click" | "payme"
   const [form, setForm] = useState(() => {
     const p = getProfile();
     const ph = p.phone ? p.phone.replace("+998","").replace(/\D/g,"") : "";
@@ -43,6 +71,10 @@ export default function CartPage() {
 
   const total = cart.reduce((s,i) => s+i.price*i.qty, 0);
   const count = cart.reduce((s,i) => s+i.qty, 0);
+  const distanceKm = orderType === "delivery" && selectedFilial && location
+    ? calcDistanceKm({ lat: selectedFilial.lat, lng: selectedFilial.lng }, location)
+    : 0;
+  const deliveryPrice = calcDeliveryPrice(distanceKm);
 
   useEffect(() => { saveCart(cart); }, [cart]);
   useEffect(() => {
@@ -76,6 +108,8 @@ export default function CartPage() {
   const handleOrder = async (e) => {
     e.preventDefault();
     if (!isValid(form.phoneFormatted)) { alert("Telefon raqam to'liq emas! 9 ta raqam kiriting."); return; }
+    if (!orderType) { alert("Buyurtma turini tanlang!"); return; }
+    if (!selectedFilial) { alert("Filialni tanlang!"); return; }
     if (orderType==="dine_in" && !tableNumber.trim()) { alert("Stol raqamini kiriting!"); return; }
     if (orderType==="delivery" && !form.address.trim()) { alert("Manzilni kiriting!"); return; }
     setOrderLoading(true);
@@ -134,7 +168,7 @@ export default function CartPage() {
       <div style={{background:"#f0fdf4",borderRadius:14,padding:"12px 24px",fontSize:"0.9rem",fontWeight:700,color:"#065f46",display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center"}}>
         <span>{orderType==="dine_in" ? "🍽 Restoran" : "🛵 Yetkazish"}</span>
         <span>•</span>
-        <span>{paymentType==="cash" ? `💵 ${t.cash}` : `💳 ${t.card}`}</span>
+        <span>💳 {paymentLabel(paymentType)}</span>
       </div>
       <button className="cp-success-btn" onClick={() => navigate("/")}>{t.backToMenu}</button>
       <button className="cp-continue-btn" style={{borderRadius:14,padding:"12px 24px"}} onClick={() => navigate("/orders")}>{t.trackOrder}</button>
@@ -269,20 +303,17 @@ export default function CartPage() {
           {orderType && (
             <>
               <p className="cp-section-q" style={{marginTop:20}}>{t.paymentTitle}</p>
-              <div style={{display:"flex",gap:12}}>
-                <div className={`payment-card ${paymentType==="cash"?"selected":""}`} onClick={() => setPaymentType("cash")}>
-                  <span style={{fontSize:"2rem"}}>💵</span>
-                  <span className="payment-label">Naqd</span>
-                </div>
-
-                <div className={`payment-card ${paymentType==="click"?"selected":""}`} onClick={() => setPaymentType("click")}>
-                  <span style={{fontSize:"2rem"}}>🟦</span>
+              <div className="payment-options">
+                <div className={`payment-card payment-card-click ${paymentType==="click"?"selected":""}`} onClick={() => setPaymentType("click")}>
+                  <span className="payment-logo click-logo">CLICK</span>
                   <span className="payment-label">Click</span>
+                  <span className="payment-desc">Online to‘lov</span>
                 </div>
 
-                <div className={`payment-card ${paymentType==="payme"?"selected":""}`} onClick={() => setPaymentType("payme")}>
-                  <span style={{fontSize:"2rem"}}>🟩</span>
+                <div className={`payment-card payment-card-payme ${paymentType==="payme"?"selected":""}`} onClick={() => setPaymentType("payme")}>
+                  <span className="payment-logo payme-logo">payme</span>
                   <span className="payment-label">Payme</span>
+                  <span className="payment-desc">Online to‘lov</span>
                 </div>
               </div>
               <div className="cp-footer" style={{marginTop:16}}>
@@ -304,10 +335,18 @@ export default function CartPage() {
                 <p className="cp-summary-total">{t.total}: <strong>{total.toLocaleString()} so'm</strong></p>
                 <div style={{display:"flex",gap:6}}>
                   <span className="order-badge blue">{orderType==="dine_in" ? `🍽 ${t.dineIn}` : `🛵 ${t.deliveryOrder}`}</span>
-                  <span className="order-badge green">{paymentType==="cash" ? `💵 ${t.cash}` : `💳 ${t.card}`}</span>
+                  <span className="order-badge green">💳 {paymentLabel(paymentType)}</span>
                 </div>
               </div>
             </div>
+
+            {orderType === "delivery" && (
+              <div className="delivery-price-box compact">
+                <div className="delivery-price-row"><span>Taomlar narxi:</span><strong>{total.toLocaleString()} so'm</strong></div>
+                <div className="delivery-price-row"><span>Taxi narxi:</span><strong>{deliveryPrice ? `${deliveryPrice.toLocaleString()} so'm` : "Lokatsiya tanlang"}</strong></div>
+                <div className="delivery-price-note">Taxi narxi online to‘lovga qo‘shilmaydi.</div>
+              </div>
+            )}
 
             <div className="cp-form-section-title">{t.personalInfo}</div>
             <div className="cp-form-field">
@@ -357,6 +396,15 @@ export default function CartPage() {
                   {locLoading ? t.gpsLoading : location ? t.gpsConnected : t.gpsDetect}
                 </button>
                 {location && <a href={`https://yandex.com/maps/?pt=${location.lng},${location.lat}&z=16&l=map`} target="_blank" rel="noreferrer" className="cp-map-link">{t.viewOnMap}</a>}
+                {location && selectedFilial && (
+                  <div className="delivery-price-box">
+                    <div className="delivery-price-title">🚕 Yetkazish narxi mijoz tomonidan alohida to‘lanadi</div>
+                    <div className="delivery-price-row"><span>Filial:</span><strong>{selectedFilial.name}</strong></div>
+                    <div className="delivery-price-row"><span>Masofa:</span><strong>{distanceKm.toFixed(1)} km</strong></div>
+                    <div className="delivery-price-row"><span>Taxminiy taxi:</span><strong>{deliveryPrice.toLocaleString()} so'm</strong></div>
+                    <div className="delivery-price-note">Online to‘lovga faqat taomlar narxi yuboriladi. Taxi pulini mijoz haydovchiga alohida to‘laydi.</div>
+                  </div>
+                )}
                 {locError && <p className="cp-location-error">⚠️ {locError}</p>}
                 <div className="cp-form-field">
                   <label>{t.fullAddress}</label>

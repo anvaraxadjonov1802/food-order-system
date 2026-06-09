@@ -387,6 +387,80 @@ h1, h2, h3, h4, h5, h6 {
 .order-badge.blue { background:#e0f2fe; color:#0369a1; }
 .order-badge.green { background:#f0fdf4; color:#065f46; }
 
+
+.payment-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.payment-logo {
+  min-width: 86px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+}
+.click-logo {
+  background: linear-gradient(135deg, #0b8cff, #005bea);
+  color: #fff;
+  text-transform: uppercase;
+}
+.payme-logo {
+  background: linear-gradient(135deg, #00c9d7, #00a8c8);
+  color: #fff;
+  text-transform: lowercase;
+}
+.payment-desc {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--gray);
+}
+.payment-card.selected .payment-desc { color: var(--g); }
+
+.delivery-price-box {
+  background: #fff7ed;
+  border: 2px solid #fed7aa;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.delivery-price-box.compact {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+.delivery-price-title {
+  color: #9a3412;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+.delivery-price-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: #7c2d12;
+}
+.delivery-price-row strong {
+  color: #0f3d1f;
+  text-align: right;
+}
+.delivery-price-note {
+  font-size: 0.73rem;
+  color: #9a3412;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+@media(max-width:420px){
+  .payment-options { grid-template-columns: 1fr; }
+}
+
 /* ─── PROFILE ──────────────────────────────────────────────── */
 .pf-hero { background:var(--g); color:white; border-radius:var(--r); padding:18px 16px; display:flex; align-items:center; gap:14px; box-shadow:var(--shadow-md); }
 .pf-avatar { width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,0.18); border:2px solid var(--lime); display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:900; flex-shrink:0; }

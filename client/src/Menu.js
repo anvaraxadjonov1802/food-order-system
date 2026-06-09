@@ -9,15 +9,38 @@ const CAT_EMOJI = {
   "fast food":"🍔","burger":"🍔","pizza":"🍕","salat":"🥗","salatlar":"🥗",
   "desert":"🍦","desertlar":"🍦","ichimliklar":"🥤","sho'rvalar":"🍲",
   "hamir ovqat":"🥟","grill":"🔥","quyuq ovqat":"🍛","ikkinchi taomlar":"🍛",
-  "birinchi taomlar":"🍲","pide":"🫓","bar":"🍺","go'shtli asortiment":"🥩",
+  "birinchi taomlar":"🍲","pide":"🫓","bar":"🥤","go'shtli asortiment":"🥩",
   "suyuq taomlar":"🍲","default":"🍽"
 };
+
+const CATEGORY_ORDER = [
+  "Birinchi taomlar", "Suyuq taomlar", "Sho'rvalar",
+  "Quyuq ovqat", "Ikkinchi taomlar", "Go'shtli asortiment",
+  "Grill", "Hamir ovqat", "Pide",
+  "Salatlar", "Fast food", "Burger", "Pizza",
+  "Ichimliklar", "Bar", "Desertlar", "Desert"
+];
+
+const normalizeCat = (v) => String(v || "").toLowerCase().trim();
 const getEmoji = (cat) => CAT_EMOJI[cat?.toLowerCase()] || CAT_EMOJI.default;
 const getField = (field, lang) => {
   if (!field) return "";
   if (typeof field === "string") return field;
   return field[lang] || field.uz || field.ru || field.en || "";
 };
+
+const getCatKey = (cat) => typeof cat === "object" ? cat.uz : cat;
+const getCategoryRank = (cat) => {
+  const key = normalizeCat(getCatKey(cat));
+  const idx = CATEGORY_ORDER.findIndex(c => normalizeCat(c) === key);
+  return idx === -1 ? 999 : idx;
+};
+const sortCategories = (cats) => [...cats].sort((a, b) => {
+  const rankA = getCategoryRank(a);
+  const rankB = getCategoryRank(b);
+  if (rankA !== rankB) return rankA - rankB;
+  return normalizeCat(getCatKey(a)).localeCompare(normalizeCat(getCatKey(b)));
+});
 const getCart = () => { try { return JSON.parse(localStorage.getItem("cart") || "[]"); } catch { return []; } };
 const saveCart = (c) => { localStorage.setItem("cart", JSON.stringify(c)); window.dispatchEvent(new Event("cartUpdated")); };
 const getProfile = () => { try { return JSON.parse(localStorage.getItem("profile") || "null"); } catch { return null; } };
@@ -50,7 +73,11 @@ export default function Menu() {
       const arr = Array.isArray(fd) ? fd : [];
       setFoods(arr);
       if (arr.length > 0) {
-        const first = urlCat || (arr[0].category && (typeof arr[0].category==="object" ? arr[0].category.uz : arr[0].category));
+        const initialCategories = sortCategories([...new Map(arr.map(f => {
+          const key = typeof f.category === "object" ? f.category.uz : f.category;
+          return [key, f.category];
+        })).values()]);
+        const first = urlCat || (initialCategories[0] && getCatKey(initialCategories[0]));
         setActiveCategory(first);
         if (urlCat) setTimeout(() => {
           catRefs.current[urlCat]?.scrollIntoView({ behavior:"smooth", block:"start" });
@@ -76,11 +103,10 @@ export default function Menu() {
     };
   }, []);
 
-  const categoriesRaw = [...new Map(foods.map(f => {
+  const categoriesRaw = sortCategories([...new Map(foods.map(f => {
     const key = typeof f.category === "object" ? f.category.uz : f.category;
     return [key, f.category];
-  })).values()];
-  const getCatKey = (cat) => typeof cat === "object" ? cat.uz : cat;
+  })).values()]);
   const getCatDisplay = (cat) => getField(cat, lang);
   const foodsByCategory = categoriesRaw.reduce((acc, cat) => {
     const key = getCatKey(cat);
