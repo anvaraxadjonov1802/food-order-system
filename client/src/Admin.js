@@ -86,6 +86,12 @@ export default function Admin() {
   const [showCatInput, setShowCatInput] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
 
+  // Filiallar
+  const [filials, setFilials] = useState([]);
+  const emptyFilialForm = { name: "", address: "", lat: "", lng: "", isActive: true };
+  const [filialForm, setFilialForm] = useState(emptyFilialForm);
+  const [editingFilialId, setEditingFilialId] = useState(null);
+
   // Rasm
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -202,6 +208,7 @@ export default function Admin() {
 
   useEffect(() => { fetchFoods(); fetchAdmins(); fetchBanners(); }, []);
   useEffect(() => { if (tab === "orders") fetchOrders(); }, [tab, orderFilter]);
+  useEffect(() => { if (tab === "filials") fetchFilials(); }, [tab]);
 
   const resetForm = () => {
     setTitles({ uz: "", ru: "", en: "" });
@@ -306,6 +313,58 @@ export default function Admin() {
     if (res.ok) { setSelectedFood(null); fetchFoods(); }
   };
 
+  // ── FILIALLAR ──
+  const fetchFilials = async () => {
+    try {
+      const res = await fetch(`${API}/api/filials/all`, { headers: authHeaders });
+      if (res.ok) setFilials(await res.json());
+    } catch {}
+  };
+
+  const resetFilialForm = () => { setFilialForm(emptyFilialForm); setEditingFilialId(null); };
+
+  const saveFilial = async (e) => {
+    e?.preventDefault?.();
+    if (!filialForm.name.trim()) { alert("Filial nomini kiriting!"); return; }
+    const payload = {
+      name: filialForm.name.trim(),
+      address: filialForm.address.trim(),
+      lat: filialForm.lat === "" ? "" : Number(filialForm.lat),
+      lng: filialForm.lng === "" ? "" : Number(filialForm.lng),
+      isActive: filialForm.isActive,
+    };
+    const url = editingFilialId ? `${API}/api/filials/${editingFilialId}` : `${API}/api/filials`;
+    const method = editingFilialId ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method, headers: { ...authHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) { resetFilialForm(); fetchFilials(); }
+    else { const d = await res.json().catch(() => ({})); alert(d.message || "Xatolik!"); }
+  };
+
+  const editFilial = (f) => {
+    setEditingFilialId(f._id);
+    setFilialForm({
+      name: f.name || "", address: f.address || "",
+      lat: f.lat ?? "", lng: f.lng ?? "", isActive: f.isActive !== false,
+    });
+  };
+
+  const toggleFilial = async (f) => {
+    const res = await fetch(`${API}/api/filials/${f._id}/toggle`, {
+      method: "PATCH", headers: { ...authHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: f.isActive === false }),
+    });
+    if (res.ok) fetchFilials();
+  };
+
+  const deleteFilial = async (f) => {
+    if (!window.confirm(`"${f.name}" filialini o'chirasizmi?`)) return;
+    const res = await fetch(`${API}/api/filials/${f._id}`, { method: "DELETE", headers: authHeaders });
+    if (res.ok) { if (editingFilialId === f._id) resetFilialForm(); fetchFilials(); }
+  };
+
   const toggleFoodAvailability = async (food, e) => {
     e?.stopPropagation?.();
     const next = food.isAvailable === false;
@@ -399,6 +458,7 @@ export default function Admin() {
           📋 Buyurtmalar {newOrderCount > 0 && <span className="tab-badge">{newOrderCount}</span>}
         </button>
         <button className={`admin-tab ${tab === "banner" ? "active" : ""}`} onClick={() => setTab("banner")}>🎨 Banner</button>
+        <button className={`admin-tab ${tab === "filials" ? "active" : ""}`} onClick={() => setTab("filials")}>🏢 Filiallar</button>
         {savedUser.role === "superadmin" && (
           <button className={`admin-tab ${tab === "admins" ? "active" : ""}`} onClick={() => setTab("admins")}>👤 Adminlar</button>
         )}
@@ -911,6 +971,86 @@ export default function Admin() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ══ FILIALLAR ══ */}
+        {tab === "filials" && (
+          <div className="admin-section">
+            <h2 className="section-title">🏢 {editingFilialId ? "Filialni tahrirlash" : "Yangi filial qo'shish"}</h2>
+            <form className="banner-form" onSubmit={saveFilial}>
+              <div className="input-group">
+                <label>Filial nomi *</label>
+                <input type="text" value={filialForm.name}
+                  onChange={e => setFilialForm({ ...filialForm, name: e.target.value })}
+                  placeholder="Masalan: Yalpiz — Chilonzor" required />
+              </div>
+              <div className="input-group">
+                <label>Manzil</label>
+                <input type="text" value={filialForm.address}
+                  onChange={e => setFilialForm({ ...filialForm, address: e.target.value })}
+                  placeholder="Ko'cha, uy, shahar" />
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <div className="input-group" style={{ flex: 1 }}>
+                  <label>Lat (kenglik)</label>
+                  <input type="number" step="any" value={filialForm.lat}
+                    onChange={e => setFilialForm({ ...filialForm, lat: e.target.value })}
+                    placeholder="41.261532" />
+                </div>
+                <div className="input-group" style={{ flex: 1 }}>
+                  <label>Lng (uzunlik)</label>
+                  <input type="number" step="any" value={filialForm.lng}
+                    onChange={e => setFilialForm({ ...filialForm, lng: e.target.value })}
+                    placeholder="69.228442" />
+                </div>
+              </div>
+              <p style={{ fontSize: "0.78rem", color: "var(--gray)", marginTop: -4 }}>
+                📍 Koordinatani Yandex/Google xaritadan oling — taxi narxi shunga bog'liq.
+              </p>
+              <label className="availability-editor" style={{ cursor: "pointer" }}>
+                <div>
+                  <strong>{filialForm.isActive ? "✅ Ochiq (mijozga ko'rinadi)" : "⏸ Vaqtincha yopiq"}</strong>
+                  <p>Yopiq filial mijozga ko'rinadi, lekin tanlab bo'lmaydi</p>
+                </div>
+                <label className="availability-switch">
+                  <input type="checkbox" checked={filialForm.isActive}
+                    onChange={e => setFilialForm({ ...filialForm, isActive: e.target.checked })} />
+                  <span></span>
+                </label>
+              </label>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button type="submit" className="btn-save">{editingFilialId ? "💾 Saqlash" : "➕ Qo'shish"}</button>
+                {editingFilialId && (
+                  <button type="button" className="btn-cancel" onClick={resetFilialForm}>Bekor qilish</button>
+                )}
+              </div>
+            </form>
+
+            <h2 className="section-title" style={{ marginTop: 24 }}>📋 Filiallar ({filials.length})</h2>
+            <div className="admins-list">
+              {filials.length === 0 && <p style={{ color: "var(--gray)" }}>Filiallar yo'q.</p>}
+              {filials.map(f => (
+                <div key={f._id} className="admin-row" style={{ opacity: f.isActive === false ? 0.65 : 1 }}>
+                  <div className="admin-avatar">🏢</div>
+                  <div style={{ flex: 1 }}>
+                    <p className="admin-row-name">
+                      {f.name} {f.isActive === false && <span style={{ color: "#b91c1c", fontWeight: 700 }}>— ⏸ Yopiq</span>}
+                    </p>
+                    <p className="admin-row-role">
+                      {f.address || "Manzil yo'q"}{(f.lat && f.lng) ? ` · ${f.lat}, ${f.lng}` : " · 📍 koordinata yo'q"}
+                    </p>
+                  </div>
+                  <div className="food-admin-btns">
+                    <button className={f.isActive === false ? "btn-available" : "btn-unavailable"} onClick={() => toggleFilial(f)}>
+                      {f.isActive === false ? "✅ Ochish" : "⏸ Yopish"}
+                    </button>
+                    <button className="btn-edit" onClick={() => editFilial(f)}>✏️</button>
+                    <button className="btn-delete" onClick={() => deleteFilial(f)}>🗑</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

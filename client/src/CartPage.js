@@ -17,10 +17,6 @@ const rawPhone = (f) => "+998"+f.replace(/\s/g,"");
 const isValid = (f) => f.replace(/\s/g,"").length===9;
 
 
-const FILIALS = [
-  { id: "rustaveli", name: "Yalpiz — Shota Rustaveli, 115", address: "Shota Rustaveli ko'chasi, 115, Toshkent", lat: 41.261532, lng: 69.228442 },
-  { id: "mvd",       name: "Yalpiz MVD — Mirobod, 1/1",    address: "Mirobod ko'chasi, 1/1, Toshkent",    lat: 41.3015, lng: 69.2850 },
-];
 
 const paymentLabel = (type) => {
   if (type === "click") return "Click";
@@ -46,6 +42,7 @@ export default function CartPage() {
   const [locError, setLocError] = useState("");
   const [orderLoading, setOrderLoading] = useState(false);
   const [savedAddr, setSavedAddr] = useState(getSaved);
+  const [FILIALS, setFilials] = useState([]);
   const [selectedFilial, setSelectedFilial] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [deliveryPrice, setDeliveryPrice] = useState(0);
@@ -71,6 +68,14 @@ export default function CartPage() {
     const onLang = () => setLang(getLang());
     window.addEventListener("langChanged", onLang);
     return () => window.removeEventListener("langChanged", onLang);
+  }, []);
+
+  // Filiallarni serverdan yuklash
+  useEffect(() => {
+    fetch(`${API}/api/filials`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => Array.isArray(data) ? setFilials(data) : setFilials([]))
+      .catch(() => setFilials([]));
   }, []);
 
   useEffect(() => {
@@ -308,14 +313,20 @@ export default function CartPage() {
             {orderType==="pickup" && (
               <div style={{display:"flex",flexDirection:"column",gap:10,padding:"14px 16px",background:"#f0fdf4",borderRadius:14,border:"2px solid var(--g3)"}}>
                 <label style={{fontSize:"0.82rem",fontWeight:700,color:"var(--g4)"}}>🏠 Qaysi filialdan olib ketasiz?</label>
-                {FILIALS.map(f => (
+                {FILIALS.map(f => {
+                  const closed = f.isActive === false;
+                  return (
                   <div key={f.id} className={`order-type-card ${selectedFilial?.id===f.id?"selected":""}`}
-                    style={{padding:"10px 14px"}} onClick={() => setSelectedFilial(f)}>
+                    style={{padding:"10px 14px", opacity: closed?0.55:1, cursor: closed?"not-allowed":"pointer"}}
+                    onClick={() => { if (!closed) setSelectedFilial(f); }}>
                     <span style={{fontSize:"1.2rem"}}>📍</span>
-                    <div style={{flex:1,fontSize:"0.85rem",fontWeight:700,color:"var(--g4)"}}>{f.name}</div>
-                    <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}>✓</div>
+                    <div style={{flex:1,fontSize:"0.85rem",fontWeight:700,color:"var(--g4)"}}>
+                      {f.name}{closed && <span style={{color:"#b91c1c",fontWeight:700}}> — ⏸ Vaqtincha yopiq</span>}
+                    </div>
+                    {!closed && <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}>✓</div>}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -331,14 +342,20 @@ export default function CartPage() {
             {orderType==="delivery" && (
               <div style={{display:"flex",flexDirection:"column",gap:8,padding:"14px 16px",background:"#fff9e6",borderRadius:14,border:"2px solid #fde68a"}}>
                 <label style={{fontSize:"0.82rem",fontWeight:700,color:"#92400e"}}>🏠 Qaysi filialdan yetkazish kerak?</label>
-                {FILIALS.map(f => (
+                {FILIALS.map(f => {
+                  const closed = f.isActive === false;
+                  return (
                   <div key={f.id} className={`order-type-card ${selectedFilial?.id===f.id?"selected":""}`}
-                    style={{padding:"10px 14px",background:"white"}} onClick={() => setSelectedFilial(f)}>
+                    style={{padding:"10px 14px",background:"white", opacity: closed?0.55:1, cursor: closed?"not-allowed":"pointer"}}
+                    onClick={() => { if (!closed) setSelectedFilial(f); }}>
                     <span style={{fontSize:"1.2rem"}}>📍</span>
-                    <div style={{flex:1,fontSize:"0.85rem",fontWeight:700,color:"var(--g4)"}}>{f.name}</div>
-                    <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}>✓</div>
+                    <div style={{flex:1,fontSize:"0.85rem",fontWeight:700,color:"var(--g4)"}}>
+                      {f.name}{closed && <span style={{color:"#b91c1c",fontWeight:700}}> — ⏸ Vaqtincha yopiq</span>}
+                    </div>
+                    {!closed && <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}>✓</div>}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
