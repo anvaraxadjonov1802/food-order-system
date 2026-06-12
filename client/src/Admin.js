@@ -374,8 +374,8 @@ export default function Admin() {
   const handleLogout = () => { localStorage.clear(); window.location.href = "/login"; };
 
   const newOrderCount = orders.filter(o => o.status === "new").length;
-  const statusLabel = { new: "Yangi", preparing: "Tayyorlanmoqda", delivered: "Yetkazildi", cancelled: "Bekor" };
-  const statusColor = { new: "#3b82f6", preparing: "#f59e0b", delivered: "#10b981", cancelled: "#ef4444" };
+  const statusLabel = { new: "Yangi", preparing: "Tayyorlanmoqda", on_way: "Yo'lda", delivered: "Yetkazildi", cancelled: "Bekor" };
+  const statusColor = { new: "#3b82f6", preparing: "#f59e0b", on_way: "#0ea5e9", delivered: "#10b981", cancelled: "#ef4444" };
 
   return (
     <div className="admin-root">
@@ -576,7 +576,7 @@ export default function Admin() {
                       <div className="food-admin-btns" onClick={e => e.stopPropagation()}>
                         <button className="btn-edit" onClick={() => handleEdit(food)}>✏️ Tahrirlash</button>
                         <button className={food.isAvailable === false ? "btn-available" : "btn-unavailable"} onClick={(e) => toggleFoodAvailability(food, e)}>
-                          {food.isAvailable === false ? "✅ Yoqish" : "⛔ O‘chirish"}
+                          {food.isAvailable === false ? "✅ Sotuvga qaytarish" : "🚫 Sotuvdan olish"}
                         </button>
                         <button className="btn-delete" onClick={() => handleDelete(food._id)}>🗑 O'chirish</button>
                       </div>
@@ -596,7 +596,7 @@ export default function Admin() {
               <button className="filter-btn" onClick={fetchOrders}>🔄 Yangilash</button>
             </div>
             <div className="order-filter-bar">
-              {["all", "new", "preparing", "delivered", "cancelled"].map(s => (
+              {["all", "new", "preparing", "on_way", "delivered", "cancelled"].map(s => (
                 <button key={s} className={`filter-btn ${orderFilter === s ? "active" : ""}`} onClick={() => setOrderFilter(s)}>
                   {s === "all" ? "Barchasi" : statusLabel[s]}
                   {s === "new" && newOrderCount > 0 && (
@@ -684,10 +684,13 @@ export default function Admin() {
                         {order.status === "new" && (
                           <button className="status-btn preparing" onClick={() => updateOrderStatus(order._id, "preparing")}>🍳 Tayyorlash</button>
                         )}
-                        {order.status === "preparing" && (
+                        {order.status === "preparing" && order.orderType === "delivery" && (
+                          <button className="status-btn preparing" onClick={() => updateOrderStatus(order._id, "on_way")}>🚕 Yo'lda</button>
+                        )}
+                        {((order.status === "preparing" && order.orderType !== "delivery") || order.status === "on_way") && (
                           <button className="status-btn delivered" onClick={() => updateOrderStatus(order._id, "delivered")}>✅ Yetkazildi</button>
                         )}
-                        {(order.status === "new" || order.status === "preparing") && (
+                        {(order.status === "new" || order.status === "preparing" || order.status === "on_way") && (
                           <button className="status-btn cancelled" onClick={() => updateOrderStatus(order._id, "cancelled")}>✕ Bekor</button>
                         )}
                         <button className="status-btn delete-order" onClick={() => deleteOrder(order._id)}>🗑</button>
@@ -962,7 +965,7 @@ export default function Admin() {
               <div className="modal-actions">
                 <button className="btn-edit" onClick={() => handleEdit(selectedFood)}>✏️ Tahrirlash</button>
                 <button className={selectedFood.isAvailable === false ? "btn-available" : "btn-unavailable"} onClick={(e) => toggleFoodAvailability(selectedFood, e)}>
-                  {selectedFood.isAvailable === false ? "✅ Yoqish" : "⛔ O‘chirish"}
+                  {selectedFood.isAvailable === false ? "✅ Sotuvga qaytarish" : "🚫 Sotuvdan olish"}
                 </button>
                 <button className="btn-delete" onClick={() => handleDelete(selectedFood._id)}>🗑 O'chirish</button>
               </div>
