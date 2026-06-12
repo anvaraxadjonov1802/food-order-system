@@ -115,7 +115,7 @@ const makePaymePaymentUrl = (order) => {
   const merchantId = process.env.PAYME_MERCHANT_ID;
   if (!merchantId) return "";
 
-  const amountTiyin = toTiyin(order.totalPrice);
+  const amountTiyin = toTiyin(order.paymentAmount || order.totalPrice);
   const returnUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 
   const params = [
@@ -140,7 +140,7 @@ const makeClickPaymentUrl = (order) => {
   const params = new URLSearchParams({
     service_id: String(serviceId),
     merchant_id: String(merchantId),
-    amount: String(Number(order.totalPrice || 0)),
+    amount: String(Number(order.paymentAmount || order.totalPrice || 0)),
     transaction_param: String(order._id),
     return_url: `${returnUrl}/orders`,
   });
@@ -551,6 +551,9 @@ app.post("/api/orders", async (req, res) => {
       }
     }
 
+    // Jami to'lov summasi: taomlar + taxi (pickup'da taxi = 0)
+    const paymentAmount = Number(totalPrice || 0) + (deliveryCalc?.price || 0);
+
     const order = await new Order({
       customerName,
       customerPhone,
@@ -568,6 +571,7 @@ app.post("/api/orders", async (req, res) => {
       deliveryPriceSource: deliveryCalc?.source || "",
       deliveryPriceCalculatedAt: deliveryCalc ? new Date() : null,
       deliveryPriceRaw: deliveryCalc?.raw || null,
+      paymentAmount,
       status: "new"
     }).save();
 
@@ -581,130 +585,9 @@ app.post("/api/orders", async (req, res) => {
       await order.save();
     }
 
-    // Millenium Taxi ga yuborish (create_order2, faqat delivery bo'lsa)
-    if (
-      process.env.MILLENIUM_ENABLED === "true" &&
-      normalizedOrderType === "delivery" &&
-      process.env.MILLENIUM_API_URL
-    ) {
-      try {
-        const crypto = require("crypto");
-
-        const milUrl = process.env.MILLENIUM_API_URL;
-        const apiKey = process.env.MILLENIUM_API_KEY || "";
-        const userId = process.env.MILLENIUM_USER_ID || "";
-
-        const fullUrl = milUrl.startsWith("http") ? milUrl : `https://${milUrl}`;
-
-        const now = new Date();
-        const sourceTime =
-          now.getFullYear().toString() +
-          String(now.getMonth() + 1).padStart(2, "0") +
-          String(now.getDate()).padStart(2, "0") +
-          String(now.getHours()).padStart(2, "0") +
-          String(now.getMinutes()).padStart(2, "0") +
-          String(now.getSeconds()).padStart(2, "0");
-
-        const selectedRestaurant = FILIALS[filialId] || null;
-        const restaurantAddress =
-          selectedRestaurant?.address || process.env.RESTAURANT_ADDRESS || "Yalpiz restoran, Toshkent";
-
-        const restaurantLat = selectedRestaurant?.lat || Number(process.env.RESTAURANT_LAT || 41.261532);
-        const restaurantLng = selectedRestaurant?.lng || Number(process.env.RESTAURANT_LNG || 69.228442);
-
-        const milleniumPhone = normalizeMilleniumPhone(customerPhone);
-
-        console.log("Customer phone original:", customerPhone);
-        console.log("Customer phone Millenium:", milleniumPhone);
-
-        if (!milleniumPhone || milleniumPhone.length < 9) {
-          console.log("⚠️ Millenium order yuborilmadi: telefon raqam noto‘g‘ri yoki bo‘sh");
-          return;
-        }
-
-        // +998781295555
-
-        const payload = {
-          phone: milleniumPhone,
-          phone_to_dial: milleniumPhone,
-          source_time: sourceTime,
-          is_prior: false,
-          check_duplicate: true,
-          customer: customerName,
-          passenger: customerName,
-          comment: `Yalpiz delivery order #${order._id}. Taomlar: ${Number(totalPrice || 0).toLocaleString()} so'm. Oldindan hisoblangan taxi: ${Number(order.deliveryPrice || 0).toLocaleString()} so'm. To'lov: ${paymentType}. Taxi pulini mijoz haydovchiga alohida to'laydi.`,
-          addresses: [
-            {
-              address: restaurantAddress,
-              lat: restaurantLat,
-              lon: restaurantLng,
-            },
-            {
-              address: address || "Mijoz manzili",
-              lat: location?.lat ? Number(location.lat) : undefined,
-              lon: location?.lng ? Number(location.lng) : undefined,
-            },
-          ],
-        };
-
-
-        if (process.env.MILLENIUM_CREW_GROUP_ID) {
-          payload.crew_group_id = Number(process.env.MILLENIUM_CREW_GROUP_ID);
-        }
-
-        // undefined fieldlarni olib tashlash
-        payload.addresses = payload.addresses.map((addr) => {
-          const clean = {};
-          Object.keys(addr).forEach((key) => {
-            if (addr[key] !== undefined && addr[key] !== null && addr[key] !== "") {
-              clean[key] = addr[key];
-            }
-          });
-          return clean;
-        });
-
-        const jsonBody = JSON.stringify(payload);
-
-        const signature = crypto
-          .createHash("md5")
-          .update(jsonBody + apiKey)
-          .digest("hex");
-
-        const headers = {
-          "Content-Type": "application/json",
-          "Signature": signature,
-        };
-
-        if (userId) {
-          headers["X-User-Id"] = userId;
-        }
-
-        const milRes = await fetch(`${fullUrl}/common_api/1.0/create_order2`, {
-          method: "POST",
-          headers,
-          body: jsonBody,
-          agent: fullUrl.startsWith("https") ? milleniumHttpsAgent : undefined,
-        });
-
-        const milData = await milRes.json();
-        console.log("Millenium create_order2 response:", JSON.stringify(milData, null, 2));
-
-        if (milData && milData.code === 0 && milData.data?.order_id) {
-          order.milleniumOrderId = String(milData.data.order_id);
-          await order.save();
-          console.log("✅ Millenium order yaratildi:", order.milleniumOrderId);
-        } else {
-          console.log("⚠️ Millenium order yaratilmadi:", milData?.descr || milData);
-        }
-      } catch (milErr) {
-        console.error("⚠️ Millenium API xato:", milErr.message);
-      }
-    }
-    const itemsList = items.map(i => `  • ${i.title} × ${i.quantity} = ${(i.price * i.quantity).toLocaleString()} so'm`).join("\n");
-    const locText = location ? `\n🗺 <a href="https://yandex.com/maps/?pt=${location.lng},${location.lat}&z=16&l=map">Xaritada ko'rish</a>` : "";
-    const deliveryText = order.deliveryPrice ? `\n🚕 <b>Taxi: ${order.deliveryPrice.toLocaleString()} so'm</b> (haydovchiga alohida)` : "";
-    const orderTypeText = normalizedOrderType === "pickup" ? "🛍 <b>Olib ketish</b>" : "🛵 <b>Dastavka</b>";
-    await sendTelegram(`🛎 <b>YANGI BUYURTMA!</b>\n${orderTypeText}\n\n👤 <b>${customerName}</b>\n📞 ${customerPhone}\n${address ? `📍 ${address}\n` : ""}${locText}\n\n🍽 <b>Taomlar:</b>\n${itemsList}\n\n💰 <b>Taomlar jami: ${totalPrice?.toLocaleString()} so'm</b>${deliveryText}`);
+    // Taxi chaqirish va oshxona telegrami ENDI BU YERDA EMAS —
+    // to'lov tasdiqlangandan keyin (Payme PerformTransaction / Click complete)
+    // dispatchMilleniumOrder() va sendPaidOrderTelegram() chaqiriladi.
     res.status(201).json({
       message: "Buyurtma qabul qilindi! ✅",
       order,
@@ -747,6 +630,144 @@ app.delete("/api/orders/:id", auth, async (req, res) => {
 });
 
 // ════ PAYME MERCHANT API CALLBACK ═════════════════════════════════════════════
+// ════ TO'LOVDAN KEYINGI ISHLAR: TAXI CHAQIRISH + OSHXONA TELEGRAMI ═════════════
+// To'lov tasdiqlangach chaqiriladi (Payme PerformTransaction / Click complete).
+const dispatchMilleniumOrder = async (order) => {
+  try {
+    if (process.env.MILLENIUM_ENABLED !== "true") return;
+    if (!process.env.MILLENIUM_API_URL) return;
+    if (order.orderType !== "delivery") return;
+    if (order.milleniumOrderId) return; // allaqachon chaqirilgan — qayta chaqirmaymiz
+
+    const crypto = require("crypto");
+
+    const milUrl = process.env.MILLENIUM_API_URL;
+    const apiKey = process.env.MILLENIUM_API_KEY || "";
+    const userId = process.env.MILLENIUM_USER_ID || "";
+
+    const fullUrl = milUrl.startsWith("http") ? milUrl : `https://${milUrl}`;
+
+    const now = new Date();
+    const sourceTime =
+      now.getFullYear().toString() +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      String(now.getDate()).padStart(2, "0") +
+      String(now.getHours()).padStart(2, "0") +
+      String(now.getMinutes()).padStart(2, "0") +
+      String(now.getSeconds()).padStart(2, "0");
+
+    const selectedRestaurant = FILIALS[order.filialId] || null;
+    const restaurantAddress =
+      selectedRestaurant?.address || process.env.RESTAURANT_ADDRESS || "Yalpiz restoran, Toshkent";
+
+    const restaurantLat = selectedRestaurant?.lat || Number(process.env.RESTAURANT_LAT || 41.261532);
+    const restaurantLng = selectedRestaurant?.lng || Number(process.env.RESTAURANT_LNG || 69.228442);
+
+    const milleniumPhone = normalizeMilleniumPhone(order.customerPhone);
+    if (!milleniumPhone || milleniumPhone.length < 9) {
+      console.log("⚠️ Millenium order yuborilmadi: telefon raqam noto‘g‘ri yoki bo‘sh");
+      return;
+    }
+
+    const payload = {
+      phone: milleniumPhone,
+      phone_to_dial: milleniumPhone,
+      source_time: sourceTime,
+      is_prior: false,
+      check_duplicate: true,
+      customer: order.customerName,
+      passenger: order.customerName,
+      comment: `Yalpiz delivery order #${order._id}. Taomlar: ${Number(order.totalPrice || 0).toLocaleString()} so'm. Taxi: ${Number(order.deliveryPrice || 0).toLocaleString()} so'm. TO'LOV BEZNAL (korporativ hisob) — mijozdan pul OLINMASIN, hammasi online to'langan.`,
+      addresses: [
+        {
+          address: restaurantAddress,
+          lat: restaurantLat,
+          lon: restaurantLng,
+        },
+        {
+          address: order.address || "Mijoz manzili",
+          lat: order.location?.lat ? Number(order.location.lat) : undefined,
+          lon: order.location?.lng ? Number(order.location.lng) : undefined,
+        },
+      ],
+    };
+
+    if (process.env.MILLENIUM_CREW_GROUP_ID) {
+      payload.crew_group_id = Number(process.env.MILLENIUM_CREW_GROUP_ID);
+    }
+
+    // undefined fieldlarni olib tashlash
+    payload.addresses = payload.addresses.map((addr) => {
+      const clean = {};
+      Object.keys(addr).forEach((key) => {
+        if (addr[key] !== undefined && addr[key] !== null && addr[key] !== "") {
+          clean[key] = addr[key];
+        }
+      });
+      return clean;
+    });
+
+    const jsonBody = JSON.stringify(payload);
+
+    const signature = crypto
+      .createHash("md5")
+      .update(jsonBody + apiKey)
+      .digest("hex");
+
+    const headers = {
+      "Content-Type": "application/json",
+      "Signature": signature,
+    };
+
+    if (userId) {
+      headers["X-User-Id"] = userId;
+    }
+
+    const milRes = await fetch(`${fullUrl}/common_api/1.0/create_order2`, {
+      method: "POST",
+      headers,
+      body: jsonBody,
+      agent: fullUrl.startsWith("https") ? milleniumHttpsAgent : undefined,
+    });
+
+    const milData = await milRes.json();
+    console.log("Millenium create_order2 response:", JSON.stringify(milData, null, 2));
+
+    if (milData && milData.code === 0 && milData.data?.order_id) {
+      order.milleniumOrderId = String(milData.data.order_id);
+      await order.save();
+      console.log("✅ Millenium order yaratildi:", order.milleniumOrderId);
+    } else {
+      console.log("⚠️ Millenium order yaratilmadi:", milData?.descr || milData);
+    }
+  } catch (milErr) {
+    console.error("⚠️ Millenium API xato:", milErr.message);
+  }
+};
+
+const sendPaidOrderTelegram = async (order) => {
+  try {
+    const itemsList = (order.items || []).map(i => `  • ${i.title} × ${i.quantity} = ${(Number(i.price) * Number(i.quantity)).toLocaleString()} so'm`).join("\n");
+    const locText = order.location?.lat ? `\n🗺 <a href="https://yandex.com/maps/?pt=${order.location.lng},${order.location.lat}&z=16&l=map">Xaritada ko'rish</a>` : "";
+    const orderTypeText = order.orderType === "pickup" ? "🛍 <b>Olib ketish</b>" : "🛵 <b>Dastavka</b>";
+    const payLabel = order.paymentProvider === "payme" ? "Payme" : "Click";
+    const taxiText = order.orderType === "delivery"
+      ? `\n🚕 Taxi: ${Number(order.deliveryPrice || 0).toLocaleString()} so'm (beznal — to'lovga kiritilgan)${order.milleniumOrderId ? ` | Millenium #${order.milleniumOrderId}` : "\n⚠️ <b>Millenium chaqirilmadi — taxini QO'LDA chaqiring!</b>"}`
+      : "";
+    await sendTelegram(
+      `🛎 <b>YANGI BUYURTMA — ✅ TO'LANDI (${payLabel})</b>\n${orderTypeText}\n\n` +
+      `👤 <b>${order.customerName}</b>\n📞 ${order.customerPhone}\n` +
+      (order.address ? `📍 ${order.address}\n` : "") +
+      `${locText}\n\n🍽 <b>Taomlar:</b>\n${itemsList}\n\n` +
+      `💰 Taomlar: ${Number(order.totalPrice || 0).toLocaleString()} so'm${taxiText}\n` +
+      `💳 <b>Jami to'landi: ${Number(order.paymentAmount || order.totalPrice || 0).toLocaleString()} so'm</b>\n` +
+      `🧾 Order: ${order._id}`
+    );
+  } catch (e) {
+    console.error("Paid-order telegram xato:", e.message);
+  }
+};
+
 app.post("/api/payments/payme", async (req, res) => {
   console.log("PAYME headers auth exists:", !!req.headers.authorization);
   console.log("PAYME body:", JSON.stringify(req.body, null, 2));
@@ -769,7 +790,11 @@ app.post("/api/payments/payme", async (req, res) => {
         return res.json(paymeError(id, -31050, "Заказ не найден", "order_num"));
       }
 
-      if (toTiyin(order.totalPrice) !== Number(params.amount)) {
+      if (order.status === "cancelled") {
+        return res.json(paymeError(id, -31051, "Заказ отменен", "order_num"));
+      }
+
+      if (toTiyin(order.paymentAmount || order.totalPrice) !== Number(params.amount)) {
         return res.json(paymeError(id, -31001, "Неверная сумма"));
       }
 
@@ -788,7 +813,11 @@ app.post("/api/payments/payme", async (req, res) => {
         return res.json(paymeError(id, -31050, "Заказ не найден", "order_num"));
       }
 
-      if (toTiyin(order.totalPrice) !== Number(params.amount)) {
+      if (order.status === "cancelled") {
+        return res.json(paymeError(id, -31051, "Заказ отменен", "order_num"));
+      }
+
+      if (toTiyin(order.paymentAmount || order.totalPrice) !== Number(params.amount)) {
         return res.json(paymeError(id, -31001, "Неверная сумма"));
       }
 
@@ -838,13 +867,9 @@ app.post("/api/payments/payme", async (req, res) => {
       order.paymentProvider = "payme";
       await order.save();
 
-      await sendTelegram(
-        `✅ <b>PAYME TO‘LOV QILINDI</b>\n\n` +
-        `👤 ${order.customerName}\n` +
-        `📞 ${order.customerPhone}\n` +
-        `💰 ${order.totalPrice?.toLocaleString()} so'm\n` +
-        `🧾 Order: ${order._id}`
-      );
+      // To'lov tasdiqlandi → taxi chaqiramiz va oshxonaga xabar beramiz
+      await dispatchMilleniumOrder(order);
+      await sendPaidOrderTelegram(order);
 
       return res.json(paymeResult(id, {
         transaction: String(order._id),
@@ -942,7 +967,11 @@ app.post("/api/payments/click/prepare", async (req, res) => {
       return res.json(clickError(-5, "Order not found"));
     }
 
-    if (Number(order.totalPrice) !== Number(body.amount)) {
+    if (order.status === "cancelled") {
+      return res.json(clickError(-5, "Order cancelled"));
+    }
+
+    if (Number(order.paymentAmount || order.totalPrice) !== Number(body.amount)) {
       return res.json(clickError(-2, "Incorrect amount"));
     }
 
@@ -994,6 +1023,15 @@ app.post("/api/payments/click/complete", async (req, res) => {
       return res.json(clickError(-5, "Order not found"));
     }
 
+    // Takroriy webhook: allaqachon to'langan bo'lsa, idempotent OK qaytaramiz
+    if (order.paymentStatus === "paid") {
+      return res.json(clickOk({
+        click_trans_id: body.click_trans_id,
+        merchant_trans_id: body.merchant_trans_id,
+        merchant_confirm_id: String(order._id),
+      }));
+    }
+
     if (String(body.error) !== "0") {
       order.paymentStatus = "failed";
       await order.save();
@@ -1005,7 +1043,7 @@ app.post("/api/payments/click/complete", async (req, res) => {
       }));
     }
 
-    if (Number(order.totalPrice) !== Number(body.amount)) {
+    if (Number(order.paymentAmount || order.totalPrice) !== Number(body.amount)) {
       return res.json(clickError(-2, "Incorrect amount"));
     }
 
@@ -1015,13 +1053,9 @@ app.post("/api/payments/click/complete", async (req, res) => {
     order.paymentTransactionId = String(body.click_trans_id || "");
     await order.save();
 
-    await sendTelegram(
-      `✅ <b>CLICK TO‘LOV QILINDI</b>\n\n` +
-      `👤 ${order.customerName}\n` +
-      `📞 ${order.customerPhone}\n` +
-      `💰 ${order.totalPrice?.toLocaleString()} so'm\n` +
-      `🧾 Order: ${order._id}`
-    );
+    // To'lov tasdiqlandi → taxi chaqiramiz va oshxonaga xabar beramiz
+    await dispatchMilleniumOrder(order);
+    await sendPaidOrderTelegram(order);
 
     return res.json(clickOk({
       click_trans_id: body.click_trans_id,
@@ -1375,6 +1409,31 @@ app.put("/api/banner", auth, upload.single("media"), async (req, res) => {
     res.json(banner);
   } catch (e) { res.status(500).json({ message: "Xato: " + e.message }); }
 });
+
+// ════ TO'LANMAGAN BUYURTMALARNI AVTO-BEKOR QILISH ══════════════════════════════
+// 30 daqiqa ichida to'lanmagan buyurtmalar bekor qilinadi (har 5 daqiqada tekshiriladi).
+// paymeState=1 (aktiv Payme tranzaksiyasi) bo'lganlar tegilmaydi — ularni Payme o'zi yopadi.
+const AUTO_CANCEL_MINUTES = 30;
+const autoCancelUnpaidOrders = async () => {
+  try {
+    const cutoff = new Date(Date.now() - AUTO_CANCEL_MINUTES * 60 * 1000);
+    const result = await Order.updateMany(
+      {
+        status: "new",
+        paymentStatus: { $in: ["unpaid", "pending"] },
+        paymeState: { $ne: 1 },
+        createdAt: { $lt: cutoff },
+      },
+      { $set: { status: "cancelled", paymentStatus: "cancelled" } }
+    );
+    if (result.modifiedCount) {
+      console.log(`⏱ ${result.modifiedCount} ta to'lanmagan buyurtma avto-bekor qilindi (>${AUTO_CANCEL_MINUTES} daqiqa)`);
+    }
+  } catch (e) {
+    console.error("Avto-bekor xato:", e.message);
+  }
+};
+setInterval(autoCancelUnpaidOrders, 5 * 60 * 1000);
 
 // ─── SERVER ───────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;

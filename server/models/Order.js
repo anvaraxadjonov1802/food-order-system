@@ -18,6 +18,7 @@ const OrderSchema = new mongoose.Schema({
   deliveryPriceSource: { type: String, default: "" },
   deliveryPriceCalculatedAt: { type: Date, default: null },
   deliveryPriceRaw: { type: mongoose.Schema.Types.Mixed, default: null },
+  paymentAmount: { type: Number, default: 0 }, // jami to'lov: taomlar + taxi
   orderType:   { type: String, enum: ["pickup", "delivery"], default: "delivery" },
   paymentType: {
     type: String,

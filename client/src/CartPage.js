@@ -388,8 +388,9 @@ export default function CartPage() {
               <div className="delivery-price-box compact">
                 <div className="delivery-price-row"><span>Taomlar narxi:</span><strong>{total.toLocaleString()} so'm</strong></div>
                 <div className="delivery-price-row"><span>Taxi narxi (Millenium):</span><strong className={deliveryPrice ? "delivery-price-ok" : ""}>{getDeliveryPriceText()}</strong></div>
+                {deliveryPrice > 0 && <div className="delivery-price-row"><span><b>Jami to‘lov:</b></span><strong>{(total + deliveryPrice).toLocaleString()} so'm</strong></div>}
                 {deliveryPriceError && <div className="delivery-price-error">⚠️ {deliveryPriceError}</div>}
-                <div className="delivery-price-note">Taxi narxi online to‘lovga qo‘shilmaydi. Mijoz haydovchiga alohida to‘laydi.</div>
+                <div className="delivery-price-note">To‘lov bitta: taomlar + taxi birga to‘lanadi. Haydovchiga naqd to‘lash shart emas.</div>
               </div>
             )}
 
@@ -446,8 +447,9 @@ export default function CartPage() {
                     <div className="delivery-price-title">🚕 Millenium hisoblagan aniq taxi narxi</div>
                     <div className="delivery-price-row"><span>Filial:</span><strong>{selectedFilial.name}</strong></div>
                     <div className="delivery-price-row"><span>Taxi narxi:</span><strong className={deliveryPrice ? "delivery-price-ok" : ""}>{getDeliveryPriceText()}</strong></div>
+                    {deliveryPrice > 0 && <div className="delivery-price-row"><span><b>Jami to‘lov:</b></span><strong>{(total + deliveryPrice).toLocaleString()} so'm</strong></div>}
                     {deliveryPriceError && <div className="delivery-price-error">⚠️ {deliveryPriceError}</div>}
-                    <div className="delivery-price-note">Online to‘lovga faqat taomlar narxi yuboriladi. Taxi pulini mijoz haydovchiga alohida to‘laydi.</div>
+                    <div className="delivery-price-note">Taxi narxi to‘lovga qo‘shiladi — haydovchiga alohida to‘lamaysiz.</div>
                   </div>
                 )}
                 {locError && <p className="cp-location-error">⚠️ {locError}</p>}
