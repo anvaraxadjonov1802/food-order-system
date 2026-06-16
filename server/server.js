@@ -719,8 +719,8 @@ app.post("/api/orders", async (req, res) => {
       }
     }
 
-    // Jami to'lov summasi: taomlar + taxi (pickup'da taxi = 0)
-    const paymentAmount = Number(totalPrice || 0) + (deliveryCalc?.price || 0);
+    // Online to'lov summasi: FAQAT taomlar. Taxi pulini mijoz haydovchiga naqd to'laydi.
+    const paymentAmount = Number(totalPrice || 0);
 
     const order = await new Order({
       customerName,
@@ -862,7 +862,7 @@ const dispatchMilleniumOrder = async (order) => {
       check_duplicate: true,
       customer: order.customerName,
       passenger: order.customerName,
-      comment: `Yalpiz delivery order #${order._id}. Taomlar: ${Number(order.totalPrice || 0).toLocaleString()} so'm. Taxi: ${Number(order.deliveryPrice || 0).toLocaleString()} so'm. TO'LOV BEZNAL (korporativ hisob) — mijozdan pul OLINMASIN, hammasi online to'langan.`,
+      comment: `Yalpiz delivery order #${order._id}. Taomlar online to'langan: ${Number(order.totalPrice || 0).toLocaleString()} so'm. TAXI HAQI: ${Number(order.deliveryPrice || 0).toLocaleString()} so'm — MIJOZDAN NAQD OLINSIN.`,
       addresses: [
         {
           address: restaurantAddress,
@@ -938,7 +938,7 @@ const buildOrderTelegramText = (order) => {
   const isCash = order.paymentType === "cash";
   const payLabel = isCash ? "💵 Naqd" : (order.paymentProvider === "payme" ? "Payme" : "Click");
   const taxiText = order.orderType === "delivery"
-    ? `\n🚕 Taxi: ${Number(order.deliveryPrice || 0).toLocaleString()} so'm (beznal — to'lovga kiritilgan)${order.milleniumOrderId ? ` | Millenium #${order.milleniumOrderId}` : "\n⚠️ <b>Millenium chaqirilmadi — taxini QO'LDA chaqiring!</b>"}`
+    ? `\n🚕 Taxi: ${Number(order.deliveryPrice || 0).toLocaleString()} so'm (mijoz haydovchiga NAQD to'laydi)${order.milleniumOrderId ? ` | Millenium #${order.milleniumOrderId}` : "\n⚠️ <b>Millenium chaqirilmadi — taxini QO'LDA chaqiring!</b>"}`
     : "";
   const statusLine = `\n\n📌 <b>Holat: ${STATUS_LABELS[order.status] || order.status}</b>${order.statusUpdatedBy ? ` — ${order.statusUpdatedBy}` : ""}`;
   // Naqd va online uchun sarlavha + to'lov qatori farqli
@@ -947,7 +947,7 @@ const buildOrderTelegramText = (order) => {
     : `🛎 <b>YANGI BUYURTMA — ✅ TO'LANDI (${payLabel})</b>\n${orderTypeText}\n\n`;
   const payLine = isCash
     ? `💵 <b>Naqd to'lov: ${Number(order.paymentAmount || order.totalPrice || 0).toLocaleString()} so'm — olib ketganda</b>\n`
-    : `💳 <b>Jami to'landi: ${Number(order.paymentAmount || order.totalPrice || 0).toLocaleString()} so'm</b>\n`;
+    : `💳 <b>Taomlar uchun to'landi: ${Number(order.paymentAmount || order.totalPrice || 0).toLocaleString()} so'm</b>${order.orderType === "delivery" && order.deliveryPrice ? `\n💵 Taxi (naqd): ${Number(order.deliveryPrice).toLocaleString()} so'm` : ""}\n`;
   return (
     header +
     `👤 <b>${order.customerName}</b>\n📞 ${order.customerPhone}\n` +
