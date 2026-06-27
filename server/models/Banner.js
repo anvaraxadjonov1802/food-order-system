@@ -32,4 +32,7 @@ const BannerSchema = new mongoose.Schema({
   }],
 }, { timestamps: true });
 
+// Indeks: faol bannerlar tartib bo'yicha
+BannerSchema.index({ isActive: 1, order: 1 });
+
 module.exports = mongoose.model("Banner", BannerSchema);

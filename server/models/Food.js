@@ -22,6 +22,10 @@ const FoodSchema = new mongoose.Schema({
   isAvailable: { type: Boolean, default: true },
 }, { timestamps: true });
 
+// Indekslar: kategoriya filtri + ro'yxat sort
+FoodSchema.index({ "category.uz": 1 });
+FoodSchema.index({ createdAt: -1 });
+
 // Virtual: tanlangan tilda nom
 FoodSchema.methods.getTitle = function(lang = "uz") {
   return this.title[lang] || this.title.uz || "";
