@@ -15,18 +15,18 @@
 :root {
   --g:      #1a5c30;
   --g2:     #2d7a42;
-  --g3:     #e8f5ee;
-  --g4:     #0f3d1f;
-  --lime:   #a3d45b;
+  --g3:     #eaf3ea;
+  --g4:     #143a22;
+  --lime:   #a8d35f;
   --lime2:  #c5e882;
-  --gray:   #6b7c6b;
-  --bg:     #f4f8f5;
+  --gray:   #7c7669;
+  --bg:     #f7f5f0;
   --white:  #ffffff;
   --card:   #ffffff;
-  --border: #ddeee3;
-  --shadow: 0 2px 12px rgba(26,92,48,0.09);
-  --shadow-md: 0 6px 28px rgba(26,92,48,0.15);
-  --r: 16px; --r-sm: 10px;
+  --border: #e7ebe6;
+  --shadow: 0 6px 22px rgba(40,55,40,0.08);
+  --shadow-md: 0 12px 38px rgba(40,55,40,0.12);
+  --r: 20px; --r-sm: 14px;
   --nav-h: 64px;
 }
 
@@ -39,14 +39,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
   padding-bottom: var(--nav-h);
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 input, textarea, select, button {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif !important;
-  font-weight: 800;
+  font-weight: 700;
 }
 /* Playfair faqat maxsus sarlavhalar uchun */
 .font-serif { font-family: 'Playfair Display', serif !important; }
