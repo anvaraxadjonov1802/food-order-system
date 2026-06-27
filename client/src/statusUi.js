@@ -9,22 +9,23 @@ const STATUS_COLOR = {
 };
 
 // 4 bosqichli stepper: new(1) → preparing(2) → on_way(3) → delivered(4). cancelled=0.
+// `icon` — icons.js dagi AppIcon registr kaliti (JSX consumer'da render qilinadi).
 function buildStatusMap(t) {
   return {
-    new:       { label: t.statusNew,       emoji: "🕐",  color: STATUS_COLOR.new,       bg: "#eff6ff", step: 1 },
-    preparing: { label: t.statusPreparing, emoji: "👨‍🍳", color: STATUS_COLOR.preparing, bg: "#fffbeb", step: 2 },
-    on_way:    { label: t.statusOnWay,     emoji: "🚕",  color: STATUS_COLOR.on_way,    bg: "#eff6ff", step: 3 },
-    delivered: { label: t.statusDelivered, emoji: "🎉",  color: STATUS_COLOR.delivered, bg: "#ecfdf5", step: 4 },
-    cancelled: { label: t.statusCancelled, emoji: "❌",  color: STATUS_COLOR.cancelled, bg: "#fef2f2", step: 0 },
+    new:       { label: t.statusNew,       icon: "clock",       color: STATUS_COLOR.new,       bg: "#eff6ff", step: 1 },
+    preparing: { label: t.statusPreparing, icon: "chef",        color: STATUS_COLOR.preparing, bg: "#fffbeb", step: 2 },
+    on_way:    { label: t.statusOnWay,     icon: "taxi",        color: STATUS_COLOR.on_way,    bg: "#eff6ff", step: 3 },
+    delivered: { label: t.statusDelivered, icon: "party",       color: STATUS_COLOR.delivered, bg: "#ecfdf5", step: 4 },
+    cancelled: { label: t.statusCancelled, icon: "close",       color: STATUS_COLOR.cancelled, bg: "#fef2f2", step: 0 },
   };
 }
 
 function buildSteps(t) {
   return [
-    { key: "new",       emoji: "✅",  label: t.step1 },
-    { key: "preparing", emoji: "👨‍🍳", label: t.step2 },
-    { key: "on_way",    emoji: "🚕",  label: t.stepOnWay },
-    { key: "delivered", emoji: "🚀",  label: t.step3 },
+    { key: "new",       icon: "checkCircle", label: t.step1 },
+    { key: "preparing", icon: "chef",        label: t.step2 },
+    { key: "on_way",    icon: "taxi",        label: t.stepOnWay },
+    { key: "delivered", icon: "rocket",      label: t.step3 },
   ];
 }
 

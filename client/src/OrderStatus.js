@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, TRANSLATIONS } from "./i18n";
 import { STATUS_COLOR, buildStatusMap, buildSteps } from "./statusUi";
+import { AppIcon } from "./icons";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -89,7 +90,7 @@ export default function OrderStatus() {
       <div className="cp-body" style={{maxWidth:600}}>
         {!phoneFormatted || !isValid(phoneFormatted) ? (
           <div className="os-search-card">
-            <div className="os-search-icon">📦</div>
+            <div className="os-search-icon"><AppIcon name="orders" size={40} /></div>
             <h2 className="os-search-title">{t.trackTitle}</h2>
             <p className="os-search-desc">{t.trackDesc}</p>
             <form onSubmit={handleSearch} style={{width:"100%"}}>
@@ -103,7 +104,7 @@ export default function OrderStatus() {
                     maxLength={12} autoFocus />
                 </div>
                 <span className="cp-field-hint">
-                  {inputPhone.replace(/\s/g,"").length}/9 {isValid(inputPhone) ? "✅" : ""}
+                  {inputPhone.replace(/\s/g,"").length}/9 {isValid(inputPhone) ? <AppIcon name="checkCircle" size={14} /> : ""}
                 </span>
               </div>
               <button type="submit" className="cp-next-btn" style={{marginTop:12}}
@@ -128,11 +129,11 @@ export default function OrderStatus() {
                 )}
                 <button className="cp-back-btn"
                   onClick={() => fetchOrders(phoneFormatted)} disabled={loading}>
-                  {loading ? "⏳" : "🔄"}
+                  <AppIcon name="refresh" size={18} />
                 </button>
                 <button className="cp-back-btn"
                   onClick={() => { setPhoneFormatted(""); setOrders([]); setSearched(false); }}>
-                  ✕
+                  <AppIcon name="close" size={18} />
                 </button>
               </div>
             </div>
@@ -144,7 +145,7 @@ export default function OrderStatus() {
               </div>
             ) : searched && orders.length === 0 ? (
               <div style={{textAlign:"center",padding:"60px 20px"}}>
-                <div style={{fontSize:"3.5rem",opacity:0.3,marginBottom:12}}>📭</div>
+                <div style={{opacity:0.3,marginBottom:12,color:"var(--gray)"}}><AppIcon name="ordersOpen" size={50} /></div>
                 <p style={{fontWeight:800,color:"var(--g4)",marginBottom:8}}>{t.noOrderFound}</p>
                 <p style={{color:"var(--gray)",fontSize:"0.9rem"}}>{t.noOrderFoundSub}</p>
                 <button className="cp-next-btn" style={{marginTop:16}}
@@ -198,7 +199,7 @@ function OrderCard({ order, t, compact }) {
 
       <div style={{display:"flex",alignItems:"center",gap:12,background:s.bg,
         borderRadius:12,padding:"12px 14px",marginBottom:14}}>
-        <span style={{fontSize:"1.8rem"}}>{s.emoji}</span>
+        <span style={{display:"inline-flex",color:s.color}}><AppIcon name={s.icon} size={28} /></span>
         <div style={{flex:1}}>
           <div style={{fontWeight:900,fontSize:"1rem",color:s.color}}>{s.label}</div>
           <div style={{fontSize:"0.78rem",color:"var(--gray)",marginTop:2}}>
@@ -222,13 +223,13 @@ function OrderCard({ order, t, compact }) {
                   )}
                   <div style={{
                     width:36,height:36,borderRadius:"50%",flexShrink:0,
-                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",
+                    display:"flex",alignItems:"center",justifyContent:"center",color: done || active ? "white" : "var(--gray)",
                     background: done ? "var(--g)" : active ? "var(--g2)" : "#f2f7f2",
                     border: `3px solid ${done || active ? "var(--g)" : "#d4e8da"}`,
                     transition:"all 0.4s",
                     boxShadow: active ? "0 0 0 4px rgba(29,107,62,0.15)" : "none"
                   }}>
-                    {done ? "✓" : step.emoji}
+                    {done ? <AppIcon name="check" size={18} strokeWidth={3} /> : <AppIcon name={step.icon} size={18} />}
                   </div>
                   {idx < steps.length - 1 && (
                     <div style={{flex:1,height:3,borderRadius:2,
@@ -258,22 +259,22 @@ function OrderCard({ order, t, compact }) {
 
       {order.address && (
         <div style={{fontSize:"0.82rem",color:"var(--gray)",marginBottom:8}}>
-          📍 {order.address}
+          <AppIcon name="location" size={14} /> {order.address}
         </div>
       )}
 
       {/* Kuryer ma'lumotlari */}
       {order.driverName && (
         <div style={{background:"#f0fdf4",borderRadius:12,padding:"10px 13px",marginBottom:8,border:"1.5px solid var(--g3)"}}>
-          <div style={{fontWeight:700,fontSize:"0.85rem",color:"var(--g4)",marginBottom:4}}>🚗 Kuryer</div>
-          <div style={{fontSize:"0.82rem",color:"var(--gray)"}}>👤 {order.driverName}</div>
-          {order.driverPhone && <div style={{fontSize:"0.82rem",color:"var(--gray)"}}>📞 {order.driverPhone}</div>}
-          {order.carModel && <div style={{fontSize:"0.82rem",color:"var(--gray)"}}>🚙 {order.carModel}</div>}
+          <div style={{fontWeight:700,fontSize:"0.85rem",color:"var(--g4)",marginBottom:4}}><AppIcon name="taxi" size={15} /> Kuryer</div>
+          <div style={{fontSize:"0.82rem",color:"var(--gray)"}}><AppIcon name="user" size={14} /> {order.driverName}</div>
+          {order.driverPhone && <div style={{fontSize:"0.82rem",color:"var(--gray)"}}><AppIcon name="phone" size={14} /> {order.driverPhone}</div>}
+          {order.carModel && <div style={{fontSize:"0.82rem",color:"var(--gray)"}}><AppIcon name="taxi" size={14} /> {order.carModel}</div>}
           {order.driverLocation?.lat && (
             <a href={`https://yandex.com/maps/?pt=${order.driverLocation.lng},${order.driverLocation.lat}&z=16&l=map`}
               target="_blank" rel="noreferrer"
               style={{fontSize:"0.82rem",color:"var(--g)",fontWeight:700,textDecoration:"none",display:"block",marginTop:4}}>
-              🗺 Kuryerni xaritada ko'rish →
+              <AppIcon name="map" size={14} /> Kuryerni xaritada ko'rish →
             </a>
           )}
         </div>
@@ -294,21 +295,21 @@ function BottomNav({ active, cartCount = 0, navigate }) {
   return (
     <nav className="bottom-nav">
       <button className={`bottom-nav-btn ${active==="menu"?"active":""}`} onClick={() => navigate("/")}>
-        <span className="bottom-nav-icon">🍽</span>
+        <span className="bottom-nav-icon"><AppIcon name="menu" size={22} /></span>
         <span>Menyu</span>
       </button>
       <button className={`bottom-nav-btn ${active==="cart"?"active":""}`}
         onClick={() => navigate("/cart")} style={{position:"relative"}}>
-        <span className="bottom-nav-icon">🛒</span>
+        <span className="bottom-nav-icon"><AppIcon name="cart" size={22} /></span>
         <span>Savat</span>
         {cartCount > 0 && <span className="bottom-nav-badge">{cartCount}</span>}
       </button>
       <button className={`bottom-nav-btn ${active==="orders"?"active":""}`} onClick={() => navigate("/orders")}>
-        <span className="bottom-nav-icon">📦</span>
+        <span className="bottom-nav-icon"><AppIcon name="orders" size={22} /></span>
         <span>Buyurtmalar</span>
       </button>
       <button className={`bottom-nav-btn ${active==="profile"?"active":""}`} onClick={() => navigate("/profile")}>
-        <span className="bottom-nav-icon">👤</span>
+        <span className="bottom-nav-icon"><AppIcon name="profile" size={22} /></span>
         <span>Profil</span>
       </button>
     </nav>
