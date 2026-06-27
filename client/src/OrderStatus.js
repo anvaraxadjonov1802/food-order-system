@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, TRANSLATIONS } from "./i18n";
+import { STATUS_COLOR, buildStatusMap, buildSteps } from "./statusUi";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -16,14 +17,6 @@ const fmtPhone = (v) => {
 };
 const rawPhone = (f) => "+998" + f.replace(/\s/g,"");
 const isValid = (f) => f.replace(/\s/g,"").length === 9;
-
-// STATUS_COLOR faqat bir marta, yuqorida e'lon qilinadi
-const STATUS_COLOR = {
-  new: "#3b82f6",
-  preparing: "#f59e0b",
-  delivered: "#10b981",
-  cancelled: "#ef4444"
-};
 
 export default function OrderStatus() {
   const navigate = useNavigate();
@@ -195,19 +188,9 @@ export default function OrderStatus() {
 }
 
 function OrderCard({ order, t, compact }) {
-  const statusMap = {
-    new:       { label: t.statusNew,       emoji: "🕐", color: STATUS_COLOR.new,       bg: "#eff6ff", step: 1 },
-    preparing: { label: t.statusPreparing, emoji: "👨‍🍳", color: STATUS_COLOR.preparing, bg: "#fffbeb", step: 2 },
-    delivered: { label: t.statusDelivered, emoji: "🎉", color: STATUS_COLOR.delivered, bg: "#ecfdf5", step: 3 },
-    cancelled: { label: t.statusCancelled, emoji: "❌", color: STATUS_COLOR.cancelled, bg: "#fef2f2", step: 0 },
-  };
-
+  const statusMap = buildStatusMap(t);
   const s = statusMap[order.status] || statusMap.new;
-  const steps = [
-    { key: "new",       emoji: "✅", label: t.step1 },
-    { key: "preparing", emoji: "👨‍🍳", label: t.step2 },
-    { key: "delivered", emoji: "🚀", label: t.step3 },
-  ];
+  const steps = buildSteps(t);
 
   return (
     <div style={{background:"white",borderRadius:18,padding:18,boxShadow:"var(--shadow)",

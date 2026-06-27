@@ -223,12 +223,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ─── HERO BANNER ──────────────────────────────────────────── */
 .g-hero {
-  border-radius: var(--r); padding: 22px 20px 18px;
-  margin-bottom: 22px; color: white; min-height: 130px;
+  border-radius: 14px; padding: 16px 18px;
+  margin-bottom: 16px; color: white; min-height: 96px;
   display: flex; justify-content: space-between; align-items: flex-end; gap: 12px;
   position: relative; overflow: hidden;
 }
-.g-hero-title { font-size: 1.25rem; font-weight: 900; line-height: 1.2; margin-bottom: 5px; font-family: 'Playfair Display', serif; }
+.g-hero-title { font-size: 1.15rem; font-weight: 900; line-height: 1.2; margin-bottom: 4px; font-family: 'Playfair Display', serif; }
 .g-hero-accent { color: var(--lime); }
 .g-hero-desc { font-size: 0.82rem; color: rgba(255,255,255,0.82); font-weight: 500; }
 .g-hero-stats { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
@@ -252,20 +252,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 .g-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--lime); }
 @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-.g-card-img-wrap { position: relative; height: 140px; overflow: hidden; background: var(--g3); }
+.g-card-img-wrap { position: relative; height: 160px; overflow: hidden; background: var(--g3); }
 .g-card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; display: block; }
 .g-card:hover .g-card-img { transform: scale(1.05); }
 .g-card-img-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: linear-gradient(135deg,#e8f5ee,#c8e8d4); font-size:2.5rem; }
 .g-card-in-cart { position:absolute; top:7px; right:7px; background:var(--g); color:white; font-size:0.68rem; font-weight:800; padding:3px 8px; border-radius:12px; }
-.g-card-body { padding: 10px 10px 10px; }
-.g-card-title { font-size: 0.85rem; font-weight: 800; color: var(--g4); margin-bottom: 3px; line-height: 1.3; }
-.g-card-desc { font-size: 0.72rem; color: var(--gray); margin-bottom: 8px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.g-card-body { padding: 12px 12px 12px; }
+.g-card-title { font-size: 0.95rem; font-weight: 800; color: var(--g4); margin-bottom: 4px; line-height: 1.3; }
+.g-card-desc { font-size: 0.78rem; color: var(--gray); margin-bottom: 10px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .g-card-footer { display: flex; align-items: center; justify-content: space-between; }
-.g-card-price { font-size: 0.88rem; font-weight: 900; color: var(--g); }
-.g-card-add-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--g); color: white; border: none; font-size: 1.3rem; cursor: pointer; transition: all 0.18s; display: flex; align-items: center; justify-content: center; }
-.g-card-add-btn:hover { background: var(--g2); transform: scale(1.12); }
-.g-card-qty { display: flex; align-items: center; gap: 6px; }
-.g-card-qty-btn { width: 26px; height: 26px; border-radius: 50%; border: none; font-size: 1rem; cursor: pointer; font-weight: 800; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+.g-card-price { font-size: 1.05rem; font-weight: 900; color: var(--g); }
+.g-card-price small { font-size: 0.72rem; font-weight: 600; color: var(--gray); margin-left: 2px; }
+.g-card-add-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--g); color: white; border: none; font-size: 1.5rem; cursor: pointer; transition: all 0.18s; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(26,92,48,0.25); }
+.g-card-add-btn:hover { background: var(--g2); transform: scale(1.1); }
+.g-card-qty { display: flex; align-items: center; gap: 8px; }
+.g-card-qty-btn { width: 34px; height: 34px; border-radius: 50%; border: none; font-size: 1.15rem; cursor: pointer; font-weight: 800; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
 .g-card-qty-btn.minus { background: var(--g3); color: var(--g); }
 .g-card-qty-btn.plus { background: var(--g); color: white; }
 .g-card-qty-num { font-size: 0.88rem; font-weight: 900; color: var(--g4); min-width: 16px; text-align: center; }
@@ -626,10 +627,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ─── RESPONSIVE ───────────────────────────────────────────── */
 @media(max-width:480px){
-  .g-hero { min-height:105px; padding:16px 14px; }
-  .g-hero-title { font-size:1.05rem; }
-  .g-grid { grid-template-columns:repeat(auto-fill,minmax(145px,1fr)); gap:10px; }
-  .g-card-img-wrap { height:120px; }
+  .g-hero { min-height:84px; padding:14px; }
+  .g-hero-title { font-size:1rem; }
+  .g-grid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .g-card-img-wrap { height:140px; }
   .pf-lang-switcher { gap:2px; padding:2px; }
   .pf-lang-btn { padding:3px 6px; font-size:0.65rem; }
   .g-logo-img { height:34px; max-width:115px; }
@@ -832,4 +833,169 @@ h1, h2, h3, h4, h5, h6 {
 }
 .delivery-price-box.compact .delivery-price-error {
   margin-top: 2px;
+}
+
+/* ─── MASHHUR TAOMLAR KARUSEL ──────────────────────────────── */
+.g-pop { margin: 4px 0 22px; }
+.g-pop-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+.g-pop-title { font-size: 1.05rem; font-weight: 900; color: var(--g4); }
+.g-pop-scroll {
+  display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 8px;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+}
+.g-pop-scroll::-webkit-scrollbar { display: none; }
+.g-pop-scroll { scrollbar-width: none; }
+.g-pop-card {
+  flex: 0 0 150px; scroll-snap-align: start; cursor: pointer;
+  background: var(--card); border-radius: 16px; overflow: hidden;
+  border: 1.5px solid var(--border); box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.g-pop-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.g-pop-img { height: 110px; background: var(--g3); position: relative; }
+.g-pop-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.g-pop-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: linear-gradient(135deg,#e8f5ee,#c8e8d4); }
+.g-pop-body { padding: 9px 10px 11px; }
+.g-pop-name { font-size: 0.85rem; font-weight: 700; color: var(--g4); line-height: 1.3; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.g-pop-price { font-size: 0.98rem; font-weight: 900; color: var(--g); }
+.g-pop-price small { font-size: 0.7rem; font-weight: 600; color: var(--gray); margin-left: 2px; }
+
+/* ─── SKELETON LOADING ─────────────────────────────────────── */
+.sk { background: linear-gradient(90deg,#e9f1eb 25%,#f4f8f5 50%,#e9f1eb 75%); background-size: 200% 100%; animation: skShimmer 1.3s ease-in-out infinite; border-radius: 8px; }
+@keyframes skShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.sk-top { padding: 14px 14px 6px; }
+.sk-search { height: 44px; border-radius: 14px; margin-bottom: 12px; }
+.sk-tabs { display: flex; gap: 8px; overflow: hidden; }
+.sk-tab { height: 34px; width: 100px; border-radius: 20px; flex-shrink: 0; }
+.sk-banner { height: 96px; border-radius: 14px; margin-bottom: 16px; }
+.sk-section { height: 22px; width: 160px; margin-bottom: 14px; }
+.sk-card { pointer-events: none; }
+.sk-img { height: 160px; border-radius: 0; }
+.sk-card-body { padding: 12px; }
+.sk-line { height: 12px; margin-bottom: 8px; }
+.sk-line.w80 { width: 80%; } .sk-line.w55 { width: 55%; } .sk-line.w40 { width: 40%; }
+.sk-line.mt { margin-top: 6px; height: 16px; }
+@media(max-width:480px){ .sk-img { height: 140px; } }
+
+/* ─── CHECKOUT PROGRESS (1-2-3) ────────────────────────────── */
+.cp-steps {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; padding: 14px 16px 6px; background: var(--white);
+  position: sticky; top: 0; z-index: 5;
+}
+.cp-step { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; max-width: 110px; }
+.cp-step-line {
+  position: absolute; top: 15px; right: 50%; width: 100%; height: 3px;
+  background: var(--border); z-index: 0;
+}
+.cp-step.done .cp-step-line, .cp-step.active .cp-step-line { background: var(--g); }
+.cp-step-dot {
+  width: 30px; height: 30px; border-radius: 50%; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 800;
+  background: #eef4f0; color: var(--gray); border: 2px solid var(--border);
+  transition: all 0.25s;
+}
+.cp-step.done .cp-step-dot { background: var(--g); color: #fff; border-color: var(--g); }
+.cp-step.active .cp-step-dot { background: var(--g); color: #fff; border-color: var(--g); box-shadow: 0 0 0 4px rgba(26,92,48,0.15); }
+.cp-step-label { font-size: 0.72rem; font-weight: 700; color: var(--gray); margin-top: 5px; }
+.cp-step.active .cp-step-label, .cp-step.done .cp-step-label { color: var(--g4); }
+
+/* ─── PALITRANI YENGILLASHTIRISH (banner sheen + lime aksent) ─── */
+/* Banner: tekis to'q yashil o'rniga yumshoq lime nur — yangiroq/yengilroq his */
+.g-hero::after {
+  content: ""; position: absolute; top: -45%; right: -12%;
+  width: 230px; height: 230px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(163,212,91,0.30), transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+.g-hero::before {
+  content: ""; position: absolute; bottom: -55%; left: -8%;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.10), transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+/* Aktiv kategoriya: lime ostki chiziq bilan yumshoqroq urg'u */
+.bottom-nav-btn.active::after {
+  content: ""; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 3px; border-radius: 3px; background: var(--lime);
+}
+/* Bo'lim sarlavhasi chizig'i — yumshoqroq */
+.g-section-header { border-bottom-color: #eef4f0; }
+
+/* ═══ ADMIN DIZAYN SAYQALI ═══════════════════════════════════ */
+/* Fayl input — brendlangan tugma + drop-zone ko'rinishi */
+.input-group input[type="file"] {
+  padding: 10px 12px; cursor: pointer; background: #f7faf8;
+  border: 2px dashed var(--border); border-radius: 12px; color: var(--gray);
+}
+.input-group input[type="file"]:hover { border-color: var(--lime); background: #f0f8f3; }
+.input-group input[type="file"]::file-selector-button {
+  padding: 9px 18px; margin-right: 14px; border: none; border-radius: 9px;
+  background: var(--g); color: #fff; font-weight: 800; cursor: pointer;
+  font-family: 'Outfit', sans-serif; font-size: 0.82rem; transition: background 0.2s;
+}
+.input-group input[type="file"]::file-selector-button:hover { background: var(--g2); }
+
+/* Inputlarga yumshoq fokus halqasi */
+.input-group input:focus, .input-group textarea:focus, .input-group select:focus {
+  box-shadow: 0 0 0 3px rgba(26,92,48,0.12);
+}
+
+/* Asosiy tugmaga chuqurlik */
+.btn-primary { box-shadow: 0 3px 10px rgba(26,92,48,0.20); }
+.btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
+
+/* Bo'lim sarlavhasiga chap aksent chizig'i */
+.section-title { display: flex; align-items: center; gap: 9px; }
+.section-title::before {
+  content: ""; width: 4px; height: 18px; border-radius: 3px;
+  background: linear-gradient(var(--g), var(--lime)); flex-shrink: 0;
+}
+
+/* Forma kartasiga yengil yuqori chiziq */
+.admin-section { border-top: 3px solid var(--g3); }
+
+/* Til/kategoriya chip tanlangan holati aniqroq */
+.cat-chip.selected { background: var(--g); color: #fff; border-color: var(--g); box-shadow: 0 2px 8px rgba(26,92,48,0.22); }
+
+/* Topbar — yengil gradient */
+.admin-topbar { background: linear-gradient(100deg, var(--g4), var(--g)); }
+
+/* Aktiv tab pastki chizig'i lime gradient */
+.admin-tab.active { border-bottom-color: var(--g); color: var(--g); }
+
+/* Maxsus rasm yuklash zonasi (browser-default input o'rniga) */
+.upload-zone {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; border: 2px dashed var(--border); border-radius: 14px;
+  background: #f7faf8; cursor: pointer; transition: all 0.2s;
+}
+.upload-zone:hover { border-color: var(--g); background: #f0f8f3; }
+.upload-zone-icon {
+  width: 42px; height: 42px; flex-shrink: 0; border-radius: 11px;
+  background: var(--g3); display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+}
+.upload-zone-text { font-size: 0.86rem; font-weight: 700; color: var(--gray); word-break: break-word; }
+
+/* Filial forma tugmalari — brendga moslashtirish */
+.btn-save {
+  background: var(--g); color: #fff; border: none; border-radius: 10px;
+  padding: 11px 22px; font-size: 0.88rem; font-weight: 800; cursor: pointer;
+  font-family: 'Outfit', sans-serif; transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(26,92,48,0.20);
+}
+.btn-save:hover { background: var(--g2); transform: translateY(-1px); }
+.btn-cancel {
+  background: var(--g3); color: var(--g4); border: none; border-radius: 10px;
+  padding: 11px 22px; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+  font-family: 'Outfit', sans-serif; transition: background 0.2s;
+}
+.btn-cancel:hover { background: var(--border); }
+
+/* Admin topbar — juda tor ekranda "Admin Panel" matnini yashirish */
+@media(max-width:430px){
+  .admin-logo span { display: none; }
+  .admin-topbar { padding: 11px 14px; }
 }

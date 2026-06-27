@@ -18,6 +18,12 @@ const isValid = (f) => f.replace(/\s/g,"").length===9;
 
 
 
+const STEP_LABELS = {
+  uz: ["Savat", "Tur", "Ma'lumot"],
+  ru: ["Корзина", "Тип", "Данные"],
+  en: ["Cart", "Type", "Details"],
+};
+
 const paymentLabel = (type) => {
   if (type === "click") return "Click";
   if (type === "payme") return "Payme";
@@ -248,6 +254,23 @@ export default function CartPage() {
         </span>
         <div style={{width:80}} />
       </div>
+
+      {step!=="success" && (
+        <div className="cp-steps">
+          {(STEP_LABELS[lang] || STEP_LABELS.uz).map((label, i) => {
+            const order = ["cart", "type", "form"];
+            const cur = order.indexOf(step);
+            const done = i < cur, active = i === cur;
+            return (
+              <div key={i} className={`cp-step ${done ? "done" : ""} ${active ? "active" : ""}`}>
+                {i > 0 && <span className="cp-step-line" />}
+                <span className="cp-step-dot">{done ? "✓" : i + 1}</span>
+                <span className="cp-step-label">{label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── SAVAT */}
       {step==="cart" && (

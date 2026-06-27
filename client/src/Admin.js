@@ -570,7 +570,13 @@ export default function Admin() {
                 <div className="input-group">
                   <label>Rasm {!editId && "*"}</label>
 
-                  <input type="file" accept="image/*" onChange={handleImageChange} />
+                  <label className="upload-zone">
+                    <input type="file" accept="image/*" onChange={handleImageChange} hidden />
+                    <span className="upload-zone-icon">📷</span>
+                    <span className="upload-zone-text">
+                      {imageFile ? imageFile.name : (uploadedUrl ? "Rasm yuklandi — almashtirish uchun bosing" : "Rasm tanlash uchun bosing")}
+                    </span>
+                  </label>
                   {compressing && <p style={{ color: "var(--g)", fontSize: "0.82rem", marginTop: 4 }}>⏳ Optimallashtirilmoqda...</p>}
 
                   {/* Serverga yuklash tugmasi - faqat fayl tanlanganda, hali yuklanmaganda */}
