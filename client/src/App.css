@@ -999,3 +999,24 @@ h1, h2, h3, h4, h5, h6 {
   .admin-logo span { display: none; }
   .admin-topbar { padding: 11px 14px; }
 }
+
+/* ─── LUCIDE MINIMALIST ICONLAR ────────────────────────────── */
+/* Barcha lucide SVG iconlari uchun umumiy tekislash. currentColor
+   tufayli icon rangini ota-element (active tab/nav) avtomat beradi. */
+svg.lucide { vertical-align: middle; flex-shrink: 0; }
+
+/* Icon-only span/tugmalar — markazga tekislangan */
+.g-cat-tab-emoji,
+.g-section-emoji,
+.bottom-nav-icon,
+.g-search-icon { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+
+/* Icon + matn bir qatorda */
+.g-float-cart-text,
+.g-pop-title,
+.g-card-in-cart,
+.g-section-title span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Rasm-o'rinbosar (placeholder) iconlari — brend yashil rangda */
+.g-pop-ph,
+.g-card-img-placeholder { color: var(--g); }

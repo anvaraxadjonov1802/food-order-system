@@ -2,17 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, setLangStore, TRANSLATIONS, LOGO_GREEN, LOGO_WHITE } from "./i18n";
+import { CategoryIcon, AppIcon } from "./icons";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
-
-const CAT_EMOJI = {
-  "asosiy menu":"🍽","asosiy menyu":"🍽","asosiy taomlar":"🍽",
-  "fast food":"🍔","burger":"🍔","pizza":"🍕","salat":"🥗","salatlar":"🥗",
-  "desert":"🍦","desertlar":"🍦","ichimliklar":"🥤","sho'rvalar":"🍲",
-  "hamir ovqat":"🥟","grill":"🔥","quyuq ovqat":"🍛","ikkinchi taomlar":"🍛",
-  "birinchi taomlar":"🍲","pide":"🫓","bar":"🥤","go'shtli asortiment":"🥩",
-  "suyuq taomlar":"🍲","default":"🍽"
-};
 
 const CATEGORY_ORDER = [
   "Birinchi taomlar", "Suyuq taomlar", "Sho'rvalar",
@@ -29,7 +21,6 @@ const normalizeCat = (v) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const getEmoji = (cat) => CAT_EMOJI[normalizeCat(cat)] || CAT_EMOJI.default;
 const getField = (field, lang) => {
   if (!field) return "";
   if (typeof field === "string") return field;
@@ -190,15 +181,15 @@ export default function Menu() {
               <button className="g-login-btn" onClick={() => navigate("/login-user")}>{t.login}</button>
             )}
             <button className="g-cart-nav" onClick={() => navigate("/cart")}>
-              🛒
+              <AppIcon name="cart" size={22} />
               {cartCount > 0 && <span className="g-cart-badge">{cartCount}</span>}
             </button>
           </div>
         </div>
         <div className="g-search-bar">
-          <span>🔍</span>
+          <span className="g-search-icon"><AppIcon name="search" size={18} /></span>
           <input className="g-search-input" placeholder={t.search} value={search} onChange={e => setSearch(e.target.value)} />
-          {search && <button className="g-search-clear" onClick={() => setSearch("")}>✕</button>}
+          {search && <button className="g-search-clear" onClick={() => setSearch("")}><AppIcon name="close" size={16} /></button>}
         </div>
         {!search && (
           <div className="g-cat-tabs-wrap">
@@ -207,7 +198,7 @@ export default function Menu() {
                 const key = getCatKey(cat);
                 return (
                   <button key={i} className={`g-cat-tab ${activeCategory === key ? "active" : ""}`} onClick={() => scrollToCategory(key)}>
-                    <span className="g-cat-tab-emoji">{getEmoji(getCatDisplay(cat))}</span>
+                    <span className="g-cat-tab-emoji"><CategoryIcon name={getCatDisplay(cat)} size={18} /></span>
                     <span>{getCatDisplay(cat)}</span>
                   </button>
                 );
@@ -219,7 +210,7 @@ export default function Menu() {
 
       {cartCount > 0 && (
         <div className="g-float-cart" onClick={() => navigate("/cart")}>
-          <span className="g-float-cart-text">🛒 {cartCount} {t.pieces}</span>
+          <span className="g-float-cart-text"><AppIcon name="cart" size={16} /> {cartCount} {t.pieces}</span>
           <span className="g-float-cart-price">{cartTotal.toLocaleString()} so'm</span>
           <span className="g-float-cart-btn">{t.goCart}</span>
         </div>
@@ -227,7 +218,7 @@ export default function Menu() {
 
       {search ? (
         <main className="g-main">
-          <div className="g-section-title"><span>🔍 "{search}" ({filteredFoods.length} {t.pieces})</span></div>
+          <div className="g-section-title"><span><AppIcon name="search" size={18} /> "{search}" ({filteredFoods.length} {t.pieces})</span></div>
           <div className="g-grid">
             {filteredFoods.length === 0 ? <div className="g-empty">{t.noResults}</div>
               : filteredFoods.map((food, i) => (
@@ -245,7 +236,7 @@ export default function Menu() {
             return (
               <div key={idx} className="g-cat-section" ref={el => catRefs.current[key] = el} data-cat={key}>
                 <div className="g-section-header">
-                  <span className="g-section-emoji">{getEmoji(getCatDisplay(cat))}</span>
+                  <span className="g-section-emoji"><CategoryIcon name={getCatDisplay(cat)} size={20} /></span>
                   <h2 className="g-section-title-text">{getCatDisplay(cat)}</h2>
                   <span className="g-section-count">{foodsByCategory[key]?.length} {t.pieces}</span>
                 </div>
@@ -270,20 +261,20 @@ function BottomNav({ active, cartCount, navigate }) {
   return (
     <nav className="bottom-nav">
       <button className={`bottom-nav-btn ${active==="menu"?"active":""}`} onClick={() => navigate("/")}>
-        <span className="bottom-nav-icon">🍽</span>
+        <span className="bottom-nav-icon"><AppIcon name="menu" size={22} /></span>
         <span>Menyu</span>
       </button>
       <button className={`bottom-nav-btn ${active==="cart"?"active":""}`} onClick={() => navigate("/cart")} style={{position:"relative"}}>
-        <span className="bottom-nav-icon">🛒</span>
+        <span className="bottom-nav-icon"><AppIcon name="cart" size={22} /></span>
         <span>Savat</span>
         {cartCount > 0 && <span className="bottom-nav-badge">{cartCount}</span>}
       </button>
       <button className={`bottom-nav-btn ${active==="orders"?"active":""}`} onClick={() => navigate("/orders")}>
-        <span className="bottom-nav-icon">📦</span>
+        <span className="bottom-nav-icon"><AppIcon name="orders" size={22} /></span>
         <span>Buyurtmalar</span>
       </button>
       <button className={`bottom-nav-btn ${active==="profile"?"active":""}`} onClick={() => navigate("/profile")}>
-        <span className="bottom-nav-icon">👤</span>
+        <span className="bottom-nav-icon"><AppIcon name="profile" size={22} /></span>
         <span>Profil</span>
       </button>
     </nav>
@@ -411,7 +402,7 @@ function HeroBanner({ banners, t, foods, navigate }) {
           {/* Sarlavha */}
           <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
             <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-              <span style={{ fontSize:"1.1rem" }}>🔥</span>
+              <span style={{ display:"inline-flex" }}><AppIcon name="tag" size={18} /></span>
               <span style={{ fontWeight:800,fontSize:"0.95rem",color:"var(--g4)" }}>
                 {b.promoLabel || "Aksiya taomlar"}
               </span>
@@ -453,14 +444,14 @@ function HeroBanner({ banners, t, foods, navigate }) {
                   <div style={{ height:80,background:"var(--g3)",position:"relative",overflow:"hidden" }}>
                     {food.image
                       ? <img src={food.image} alt={title} style={{ width:"100%",height:"100%",objectFit:"cover" }} />
-                      : <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem" }}>🍽</div>
+                      : <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--g)" }}><AppIcon name="menu" size={26} /></div>
                     }
                     <span style={{
                       position:"absolute",top:5,left:5,
                       background:"#ef4444",color:"white",
                       borderRadius:8,padding:"2px 7px",
                       fontSize:"0.65rem",fontWeight:800
-                    }}>🔥 Aksiya</span>
+                    }}><AppIcon name="tag" size={11} strokeWidth={2.5} /> Aksiya</span>
                   </div>
                   {/* Info */}
                   <div style={{ padding:"7px 9px" }}>
@@ -496,7 +487,7 @@ function PopularRow({ foods, lang, navigate, t }) {
   return (
     <div className="g-pop">
       <div className="g-pop-head">
-        <span className="g-pop-title">🔥 {t.popular || "Mashhur taomlar"}</span>
+        <span className="g-pop-title"><AppIcon name="flame" size={18} /> {t.popular || "Mashhur taomlar"}</span>
       </div>
       <div className="g-pop-scroll">
         {popular.map(food => {
@@ -506,7 +497,7 @@ function PopularRow({ foods, lang, navigate, t }) {
               <div className="g-pop-img">
                 {food.image
                   ? <img src={food.image} alt={title} />
-                  : <div className="g-pop-ph">🍽</div>}
+                  : <div className="g-pop-ph"><AppIcon name="menu" size={28} /></div>}
               </div>
               <div className="g-pop-body">
                 <p className="g-pop-name">{title}</p>
@@ -531,9 +522,9 @@ function FoodCard({ food, index, cart, lang, onOpen, onAdd, onChangeQty, t }) {
       <div className="g-card-img-wrap">
         {!imgErr && food.image ? (
           <img src={food.image} alt={title} className="g-card-img" onError={() => setImgErr(true)} />
-        ) : <div className="g-card-img-placeholder">🍽</div>}
+        ) : <div className="g-card-img-placeholder"><AppIcon name="menu" size={32} /></div>}
         {!available && <span className="g-card-unavailable-badge">Hozircha yo‘q</span>}
-        {inCart && available && <span className="g-card-in-cart">✓ {inCart.qty}</span>}
+        {inCart && available && <span className="g-card-in-cart"><AppIcon name="check" size={13} strokeWidth={3} /> {inCart.qty}</span>}
       </div>
       <div className="g-card-body">
         <h3 className="g-card-title">{title}</h3>
