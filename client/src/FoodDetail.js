@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, TRANSLATIONS } from "./i18n";
+import { AppIcon } from "./icons";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 const getCart = () => { try { return JSON.parse(localStorage.getItem("cart") || "[]"); } catch { return []; } };
@@ -62,7 +63,7 @@ export default function FoodDetail() {
 
   if (!food) return (
     <div className="fd-not-found">
-      <div style={{fontSize:"4rem"}}>😕</div>
+      <div style={{color:"var(--gray)"}}><AppIcon name="frown" size={56} /></div>
       <h2 style={{fontWeight:800}}>{t.notFound}</h2>
       <button className="fd-back-btn" onClick={() => navigate("/")}>{t.backToMenu}</button>
     </div>
@@ -80,7 +81,7 @@ export default function FoodDetail() {
         <button className="fd-back-btn-header" onClick={() => navigate(-1)}>{t.back}</button>
         <span className="fd-header-title">{title}</span>
         <button className="fd-cart-btn" onClick={() => navigate("/cart")}>
-          🛒 {cartCount > 0 && <span className="fd-cart-btn-count">{cartCount}</span>}
+          <AppIcon name="cart" size={22} /> {cartCount > 0 && <span className="fd-cart-btn-count">{cartCount}</span>}
         </button>
       </div>
 
@@ -89,7 +90,7 @@ export default function FoodDetail() {
           <img src={food.image} alt={title} className="fd-img" onError={() => setImgErr(true)} />
         ) : (
           <div className="fd-img-placeholder">
-            <span>🍽</span>
+            <span style={{color:"var(--g)"}}><AppIcon name="menu" size={48} /></span>
             <p>Yalpiz Restaurant</p>
           </div>
         )}

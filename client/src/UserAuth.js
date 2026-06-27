@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, TRANSLATIONS, LOGO_GREEN } from "./i18n";
+import { AppIcon } from "./icons";
 
 const fmtPhone = (v) => {
   const d = v.replace(/\D/g,"").replace(/^998/,"").slice(0,9);
@@ -73,8 +74,8 @@ export default function UserAuth() {
 
         {step === "phone" ? (
           <>
-            <p style={{color:"var(--gray)",fontSize:"0.9rem",textAlign:"center",lineHeight:1.5}}>
-              📱 {t.enterPhone}
+            <p style={{color:"var(--gray)",fontSize:"0.9rem",textAlign:"center",lineHeight:1.5,display:"inline-flex",alignItems:"center",gap:6,justifyContent:"center"}}>
+              <AppIcon name="smartphone" size={17} /> {t.enterPhone}
             </p>
             <form className="ua-form" onSubmit={handlePhone}>
               <div className="pf-phone-wrap">
@@ -89,8 +90,8 @@ export default function UserAuth() {
                   autoFocus
                 />
               </div>
-              <p style={{fontSize:"0.78rem",color:"var(--gray)",textAlign:"center"}}>
-                {phone.replace(/\s/g,"").length}/9 {isValid(phone) ? "✅" : ""}
+              <p style={{fontSize:"0.78rem",color:"var(--gray)",textAlign:"center",display:"inline-flex",alignItems:"center",gap:4,justifyContent:"center"}}>
+                {phone.replace(/\s/g,"").length}/9 {isValid(phone) ? <AppIcon name="checkCircle" size={15} /> : ""}
               </p>
               <button type="submit" className="cp-next-btn" disabled={!isValid(phone)}>
                 {t.continue}
@@ -106,12 +107,13 @@ export default function UserAuth() {
             <div style={{
               background:"var(--g3)",borderRadius:12,
               padding:"10px 18px",fontWeight:700,
-              color:"var(--g)",fontSize:"0.9rem"
+              color:"var(--g)",fontSize:"0.9rem",
+              display:"inline-flex",alignItems:"center",gap:8
             }}>
-              📞 +998 {phone}
+              <AppIcon name="phone" size={17} /> +998 {phone}
             </div>
-            <p style={{color:"var(--gray)",fontSize:"0.9rem",textAlign:"center"}}>
-              👤 {t.enterName}
+            <p style={{color:"var(--gray)",fontSize:"0.9rem",textAlign:"center",display:"inline-flex",alignItems:"center",gap:6,justifyContent:"center"}}>
+              <AppIcon name="profile" size={17} /> {t.enterName}
             </p>
             <form className="ua-form" onSubmit={handleSave}>
               <input
@@ -124,7 +126,7 @@ export default function UserAuth() {
                 autoFocus
               />
               <button type="submit" className="cp-next-btn" disabled={!name.trim()}>
-                ✅ {t.save}
+                <AppIcon name="check" size={17} /> {t.save}
               </button>
               <button type="button" className="cp-continue-btn"
                 onClick={() => setStep("phone")}>

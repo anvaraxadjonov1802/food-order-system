@@ -1020,3 +1020,14 @@ svg.lucide { vertical-align: middle; flex-shrink: 0; }
 /* Rasm-o'rinbosar (placeholder) iconlari — brend yashil rangda */
 .g-pop-ph,
 .g-card-img-placeholder { color: var(--g); }
+
+/* ─── ICON+MATN TUGMA/LABELLAR (3-bosqich) ─────────────────── */
+.cp-next-btn, .cp-submit-btn, .cp-continue-btn, .cp-success-btn, .login-btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.pf-info-label, .pf-addr-label, .pf-order-date, .order-badge,
+.delivery-price-title, .cp-field-hint, .delivery-price-error,
+.cp-location-error, .login-error, .pf-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.order-type-icon { display: inline-flex; align-items: center; color: var(--g); }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { LOGO_GREEN } from "./i18n";
+import { AppIcon } from "./icons";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -42,9 +43,9 @@ export default function Login() {
             value={username} onChange={e => setUsername(e.target.value)} required autoFocus />
           <input className="login-input" type="password" placeholder="Parol"
             value={password} onChange={e => setPassword(e.target.value)} required />
-          {error && <p className="login-error">⚠️ {error}</p>}
+          {error && <p className="login-error"><AppIcon name="warning" size={16} /> {error}</p>}
           <button className="login-btn" type="submit" disabled={loading}>
-            {loading ? "Kirish..." : "🔐 Kirish"}
+            {loading ? "Kirish..." : <><AppIcon name="lock" size={18} /> Kirish</>}
           </button>
         </form>
       </div>

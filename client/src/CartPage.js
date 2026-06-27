@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, TRANSLATIONS } from "./i18n";
+import { AppIcon } from "./icons";
 
 import paymeLogo from "./assets/payme-logo.png";
 import clickLogo from "./assets/click-logo.png";
@@ -226,15 +227,15 @@ export default function CartPage() {
   // ── SUCCESS
   if (step==="success") return (
     <div className="cp-success">
-      <div style={{fontSize:"4rem"}}>🎉</div>
+      <div style={{color:"#10b981"}}><AppIcon name="party" size={56} /></div>
       <h2 className="cp-success-title">{t.orderAccepted}</h2>
       <p className="cp-success-sub">
         {orderType==="pickup" ? t.pickupOrderSuccess : t.deliveryOrderSuccess}
       </p>
-      <div style={{background:"#f0fdf4",borderRadius:14,padding:"12px 24px",fontSize:"0.9rem",fontWeight:700,color:"#065f46",display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center"}}>
-        <span>{orderType==="pickup" ? `🛍 ${t.pickup}` : "🛵 Yetkazish"}</span>
+      <div style={{background:"#f0fdf4",borderRadius:14,padding:"12px 24px",fontSize:"0.9rem",fontWeight:700,color:"#065f46",display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center",alignItems:"center"}}>
+        <span style={{display:"inline-flex",alignItems:"center",gap:6}}>{orderType==="pickup" ? <><AppIcon name="bag" size={16} /> {t.pickup}</> : <><AppIcon name="taxi" size={16} /> Yetkazish</>}</span>
         <span>•</span>
-        <span>💳 {paymentLabel(paymentType)}</span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:6}}><AppIcon name="card" size={16} /> {paymentLabel(paymentType)}</span>
       </div>
       <button className="cp-success-btn" onClick={() => navigate("/")}>{t.backToMenu}</button>
       <button className="cp-continue-btn" style={{borderRadius:14,padding:"12px 24px"}} onClick={() => navigate("/orders")}>{t.trackOrder}</button>
@@ -264,7 +265,7 @@ export default function CartPage() {
             return (
               <div key={i} className={`cp-step ${done ? "done" : ""} ${active ? "active" : ""}`}>
                 {i > 0 && <span className="cp-step-line" />}
-                <span className="cp-step-dot">{done ? "✓" : i + 1}</span>
+                <span className="cp-step-dot">{done ? <AppIcon name="check" size={14} strokeWidth={3} /> : i + 1}</span>
                 <span className="cp-step-label">{label}</span>
               </div>
             );
@@ -277,7 +278,7 @@ export default function CartPage() {
         <div className="cp-body">
           {cart.length===0 ? (
             <div className="cp-empty">
-              <div style={{fontSize:"4rem",opacity:0.3}}>🛒</div>
+              <div style={{opacity:0.25,color:"var(--g)"}}><AppIcon name="cart" size={56} /></div>
               <p className="cp-empty-title">{t.emptyCart}</p>
               <p className="cp-empty-sub">{t.emptyCartSub}</p>
               <button className="cp-empty-btn" onClick={() => navigate("/")}>{t.goToMenu}</button>
@@ -300,7 +301,7 @@ export default function CartPage() {
                         <button onClick={() => changeQty(item._id,+1)}>+</button>
                       </div>
                       <p className="cp-item-total">{(item.price*item.qty).toLocaleString()} so'm</p>
-                      <button className="cp-item-remove" onClick={() => removeItem(item._id)}>🗑</button>
+                      <button className="cp-item-remove" onClick={() => removeItem(item._id)}><AppIcon name="trash" size={18} /></button>
                     </div>
                   </div>
                 ))}
@@ -332,27 +333,27 @@ export default function CartPage() {
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {/* Olib ketish */}
             <div className={`order-type-card ${orderType==="pickup"?"selected":""}`} onClick={() => setOrderType("pickup")}>
-              <div className="order-type-icon">🛍</div>
+              <div className="order-type-icon"><AppIcon name="bag" size={24} /></div>
               <div className="order-type-info">
                 <div className="order-type-title">{t.pickup}</div>
                 <div className="order-type-desc">{t.pickupDesc}</div>
               </div>
-              <div className={`order-type-check ${orderType==="pickup"?"active":""}`}>✓</div>
+              <div className={`order-type-check ${orderType==="pickup"?"active":""}`}><AppIcon name="check" size={14} strokeWidth={3} /></div>
             </div>
             {orderType==="pickup" && (
               <div style={{display:"flex",flexDirection:"column",gap:10,padding:"14px 16px",background:"#f0fdf4",borderRadius:14,border:"2px solid var(--g3)"}}>
-                <label style={{fontSize:"0.82rem",fontWeight:700,color:"var(--g4)"}}>🏠 Qaysi filialdan olib ketasiz?</label>
+                <label style={{fontSize:"0.82rem",fontWeight:700,color:"var(--g4)"}}><AppIcon name="home" size={15} /> Qaysi filialdan olib ketasiz?</label>
                 {FILIALS.map(f => {
                   const closed = f.isActive === false;
                   return (
                   <div key={f.id} className={`order-type-card ${selectedFilial?.id===f.id?"selected":""}`}
                     style={{padding:"10px 14px", opacity: closed?0.55:1, cursor: closed?"not-allowed":"pointer"}}
                     onClick={() => { if (!closed) setSelectedFilial(f); }}>
-                    <span style={{fontSize:"1.2rem"}}>📍</span>
+                    <span style={{fontSize:"1.2rem",display:"inline-flex",color:"var(--g)"}}><AppIcon name="location" size={18} /></span>
                     <div style={{flex:1,fontSize:"0.85rem",fontWeight:700,color:"var(--g4)"}}>
-                      {f.name}{closed && <span style={{color:"#b91c1c",fontWeight:700}}> — ⏸ Vaqtincha yopiq</span>}
+                      {f.name}{closed && <span style={{color:"#b91c1c",fontWeight:700}}> — <AppIcon name="ban" size={13} /> Vaqtincha yopiq</span>}
                     </div>
-                    {!closed && <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}>✓</div>}
+                    {!closed && <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}><AppIcon name="check" size={14} strokeWidth={3} /></div>}
                   </div>
                   );
                 })}
@@ -361,27 +362,27 @@ export default function CartPage() {
 
             {/* Yetkazib berish */}
             <div className={`order-type-card ${orderType==="delivery"?"selected":""}`} onClick={() => setOrderType("delivery")}>
-              <div className="order-type-icon">🛵</div>
+              <div className="order-type-icon"><AppIcon name="taxi" size={24} /></div>
               <div className="order-type-info">
                 <div className="order-type-title">{t.deliveryOrder}</div>
                 <div className="order-type-desc">{t.deliveryDesc}</div>
               </div>
-              <div className={`order-type-check ${orderType==="delivery"?"active":""}`}>✓</div>
+              <div className={`order-type-check ${orderType==="delivery"?"active":""}`}><AppIcon name="check" size={14} strokeWidth={3} /></div>
             </div>
             {orderType==="delivery" && (
               <div style={{display:"flex",flexDirection:"column",gap:8,padding:"14px 16px",background:"#fff9e6",borderRadius:14,border:"2px solid #fde68a"}}>
-                <label style={{fontSize:"0.82rem",fontWeight:700,color:"#92400e"}}>🏠 Qaysi filialdan yetkazish kerak?</label>
+                <label style={{fontSize:"0.82rem",fontWeight:700,color:"#92400e"}}><AppIcon name="home" size={15} /> Qaysi filialdan yetkazish kerak?</label>
                 {FILIALS.map(f => {
                   const closed = f.isActive === false;
                   return (
                   <div key={f.id} className={`order-type-card ${selectedFilial?.id===f.id?"selected":""}`}
                     style={{padding:"10px 14px",background:"white", opacity: closed?0.55:1, cursor: closed?"not-allowed":"pointer"}}
                     onClick={() => { if (!closed) setSelectedFilial(f); }}>
-                    <span style={{fontSize:"1.2rem"}}>📍</span>
+                    <span style={{fontSize:"1.2rem",display:"inline-flex",color:"var(--g)"}}><AppIcon name="location" size={18} /></span>
                     <div style={{flex:1,fontSize:"0.85rem",fontWeight:700,color:"var(--g4)"}}>
-                      {f.name}{closed && <span style={{color:"#b91c1c",fontWeight:700}}> — ⏸ Vaqtincha yopiq</span>}
+                      {f.name}{closed && <span style={{color:"#b91c1c",fontWeight:700}}> — <AppIcon name="ban" size={13} /> Vaqtincha yopiq</span>}
                     </div>
-                    {!closed && <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}>✓</div>}
+                    {!closed && <div className={`order-type-check ${selectedFilial?.id===f.id?"active":""}`}><AppIcon name="check" size={14} strokeWidth={3} /></div>}
                   </div>
                   );
                 })}
@@ -408,7 +409,7 @@ export default function CartPage() {
 
                 {orderType==="pickup" && (
                   <div className={`payment-card ${paymentType==="cash"?"selected":""}`} onClick={() => setPaymentType("cash")}>
-                    <span className="payment-logo-img" style={{fontSize:"2rem",display:"flex",alignItems:"center",justifyContent:"center"}}>💵</span>
+                    <span className="payment-logo-img" style={{fontSize:"2rem",display:"flex",alignItems:"center",justifyContent:"center"}}><AppIcon name="money" size={26} /></span>
                     <span className="payment-label">Naqd</span>
                     <span className="payment-desc">Olib ketganda</span>
                   </div>
@@ -432,8 +433,8 @@ export default function CartPage() {
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,flexWrap:"wrap",gap:8}}>
                 <p className="cp-summary-total">{t.total}: <strong>{total.toLocaleString()} so'm</strong></p>
                 <div style={{display:"flex",gap:6}}>
-                  <span className="order-badge blue">{orderType==="pickup" ? `🛍 ${t.pickup}` : `🛵 ${t.deliveryOrder}`}</span>
-                  <span className="order-badge green">💳 {paymentLabel(paymentType)}</span>
+                  <span className="order-badge blue">{orderType==="pickup" ? <><AppIcon name="bag" size={13} /> {t.pickup}</> : <><AppIcon name="taxi" size={13} /> {t.deliveryOrder}</>}</span>
+                  <span className="order-badge green"><AppIcon name="card" size={13} /> {paymentLabel(paymentType)}</span>
                 </div>
               </div>
             </div>
@@ -443,8 +444,8 @@ export default function CartPage() {
                 <div className="delivery-price-row"><span>Taomlar narxi:</span><strong>{total.toLocaleString()} so'm</strong></div>
                 <div className="delivery-price-row"><span>Taxi narxi (Millenium):</span><strong className={deliveryPrice ? "delivery-price-ok" : ""}>{getDeliveryPriceText()}</strong></div>
                 {deliveryPrice > 0 && <div className="delivery-price-row"><span><b>Online to‘lov (taom):</b></span><strong>{total.toLocaleString()} so'm</strong></div>}
-                {deliveryPriceError && <div className="delivery-price-error">⚠️ {deliveryPriceError}</div>}
-                <div className="delivery-price-note">💳 Online faqat taom uchun to‘lanadi. 💵 Taxi narxini haydovchiga naqd berasiz.</div>
+                {deliveryPriceError && <div className="delivery-price-error"><AppIcon name="warning" size={15} /> {deliveryPriceError}</div>}
+                <div className="delivery-price-note"><AppIcon name="card" size={14} /> Online faqat taom uchun to‘lanadi. <AppIcon name="money" size={14} /> Taxi narxini haydovchiga naqd berasiz.</div>
               </div>
             )}
 
@@ -460,12 +461,12 @@ export default function CartPage() {
                 <input type="tel" className="pf-phone-input" placeholder={t.phonePlaceholder}
                   value={form.phoneFormatted} onChange={e => setForm({...form,phoneFormatted:fmtPhone(e.target.value)})} maxLength={12} required />
               </div>
-              <span className="cp-field-hint">{form.phoneFormatted.replace(/\s/g,"").length}/9 {t.phoneHint}{isValid(form.phoneFormatted)?" ✅":""}</span>
+              <span className="cp-field-hint">{form.phoneFormatted.replace(/\s/g,"").length}/9 {t.phoneHint}{isValid(form.phoneFormatted)? <AppIcon name="checkCircle" size={14} /> :""}</span>
             </div>
 
             {orderType==="pickup" && (
               <div style={{background:"#f0fdf4",borderRadius:14,padding:"14px 16px",border:"2px solid var(--g3)"}}>
-                <p style={{fontSize:"0.9rem",fontWeight:700,color:"#065f46"}}>🛍 {t.pickup} — {selectedFilial?.name}</p>
+                <p style={{fontSize:"0.9rem",fontWeight:700,color:"#065f46"}}><AppIcon name="bag" size={15} /> {t.pickup} — {selectedFilial?.name}</p>
               </div>
             )}
 
@@ -484,7 +485,7 @@ export default function CartPage() {
                             onClick={() => {setForm(f=>({...f,address:a.address}));setShowPicker(false);}}
                             style={{textAlign:"left",padding:"10px 14px",background:form.address===a.address?"#d1fae5":"white",
                               border:`2px solid ${form.address===a.address?"var(--g)":"#d4e8da"}`,borderRadius:12,cursor:"pointer"}}>
-                            <div style={{fontWeight:700,fontSize:"0.88rem"}}>📍 {a.label}</div>
+                            <div style={{fontWeight:700,fontSize:"0.88rem"}}><AppIcon name="location" size={14} /> {a.label}</div>
                             <div style={{fontSize:"0.8rem",color:"var(--gray)"}}>{a.address}</div>
                           </button>
                         ))}
@@ -498,15 +499,15 @@ export default function CartPage() {
                 {location && <a href={`https://yandex.com/maps/?pt=${location.lng},${location.lat}&z=16&l=map`} target="_blank" rel="noreferrer" className="cp-map-link">{t.viewOnMap}</a>}
                 {location && selectedFilial && (
                   <div className="delivery-price-box">
-                    <div className="delivery-price-title">🚕 Millenium hisoblagan aniq taxi narxi</div>
+                    <div className="delivery-price-title"><AppIcon name="taxi" size={15} /> Millenium hisoblagan aniq taxi narxi</div>
                     <div className="delivery-price-row"><span>Filial:</span><strong>{selectedFilial.name}</strong></div>
                     <div className="delivery-price-row"><span>Taxi narxi:</span><strong className={deliveryPrice ? "delivery-price-ok" : ""}>{getDeliveryPriceText()}</strong></div>
                     {deliveryPrice > 0 && <div className="delivery-price-row"><span><b>Online to‘lov (taom):</b></span><strong>{total.toLocaleString()} so'm</strong></div>}
-                    {deliveryPriceError && <div className="delivery-price-error">⚠️ {deliveryPriceError}</div>}
-                    <div className="delivery-price-note">💳 Online faqat taom narxi. 💵 Taxi narxini haydovchiga naqd to‘laysiz.</div>
+                    {deliveryPriceError && <div className="delivery-price-error"><AppIcon name="warning" size={15} /> {deliveryPriceError}</div>}
+                    <div className="delivery-price-note"><AppIcon name="card" size={14} /> Online faqat taom narxi. <AppIcon name="money" size={14} /> Taxi narxini haydovchiga naqd to‘laysiz.</div>
                   </div>
                 )}
-                {locError && <p className="cp-location-error">⚠️ {locError}</p>}
+                {locError && <p className="cp-location-error"><AppIcon name="warning" size={15} /> {locError}</p>}
                 <div className="cp-form-field">
                   <label>{t.fullAddress}</label>
                   <input type="text" required placeholder={t.addressPlaceholder} value={form.address} onChange={e => setForm({...form,address:e.target.value})} />

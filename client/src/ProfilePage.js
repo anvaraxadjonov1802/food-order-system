@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, setLangStore, TRANSLATIONS } from "./i18n";
+import { AppIcon } from "./icons";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 const STATUS_COLOR = { new:"#3b82f6", preparing:"#f59e0b", delivered:"#10b981", cancelled:"#ef4444" };
@@ -113,8 +114,8 @@ export default function ProfilePage() {
         </div>
 
         <div className="pf-tabs">
-          {[{key:"profile",label:`👤 ${t.profile}`},{key:"orders",label:`📋 ${t.orders}`},{key:"addresses",label:`📍 ${t.addresses}`}].map(tb => (
-            <button key={tb.key} className={`pf-tab ${tab===tb.key?"active":""}`} onClick={() => setTab(tb.key)}>{tb.label}</button>
+          {[{key:"profile",icon:"profile",label:t.profile},{key:"orders",icon:"list",label:t.orders},{key:"addresses",icon:"location",label:t.addresses}].map(tb => (
+            <button key={tb.key} className={`pf-tab ${tab===tb.key?"active":""}`} onClick={() => setTab(tb.key)}><AppIcon name={tb.icon} size={16} /> {tb.label}</button>
           ))}
         </div>
 
@@ -123,16 +124,16 @@ export default function ProfilePage() {
           <div className="pf-card">
             {!editing ? (
               <>
-                <div className="pf-info-row"><span className="pf-info-label">👤 {t.fullName}</span><span className="pf-info-val">{profile.name||"—"}</span></div>
-                <div className="pf-info-row"><span className="pf-info-label">📞 {t.phoneNumber}</span><span className="pf-info-val">{displayPhone}</span></div>
-                {profile.email && <div className="pf-info-row"><span className="pf-info-label">📧 Email</span><span className="pf-info-val">{profile.email}</span></div>}
-                {profile.note && <div className="pf-info-row"><span className="pf-info-label">📝</span><span className="pf-info-val">{profile.note}</span></div>}
+                <div className="pf-info-row"><span className="pf-info-label"><AppIcon name="profile" size={15} /> {t.fullName}</span><span className="pf-info-val">{profile.name||"—"}</span></div>
+                <div className="pf-info-row"><span className="pf-info-label"><AppIcon name="phone" size={15} /> {t.phoneNumber}</span><span className="pf-info-val">{displayPhone}</span></div>
+                {profile.email && <div className="pf-info-row"><span className="pf-info-label"><AppIcon name="mail" size={15} /> Email</span><span className="pf-info-val">{profile.email}</span></div>}
+                {profile.note && <div className="pf-info-row"><span className="pf-info-label"><AppIcon name="file" size={15} /></span><span className="pf-info-val">{profile.note}</span></div>}
                 <button className="cp-next-btn" style={{marginTop:16}} onClick={() => {setForm({...profile,phoneFormatted:fmtPhone(profile.phone?.replace("+998","")||"")});setEditing(true);}}>
-                  {profile.name ? t.editProfile : t.fillProfile}
+                  {profile.name ? <><AppIcon name="edit" size={16} /> {t.editProfile}</> : <><AppIcon name="edit" size={16} /> {t.fillProfile}</>}
                 </button>
                 {profile.name && (
                   <button className="cp-continue-btn" style={{marginTop:8}} onClick={() => { if(window.confirm(t.clearConfirm)){localStorage.removeItem("profile");setProfileState({});setForm({phoneFormatted:""});setEditing(true);}}}>
-                    {t.clearProfile}
+                    <><AppIcon name="trash" size={16} /> {t.clearProfile}</>
                   </button>
                 )}
               </>
@@ -150,7 +151,7 @@ export default function ProfilePage() {
                     <input type="tel" className="pf-phone-input" placeholder={t.phonePlaceholder}
                       value={form.phoneFormatted||""} onChange={e=>setForm(f=>({...f,phoneFormatted:fmtPhone(e.target.value)}))} maxLength={12} />
                   </div>
-                  <span className="cp-field-hint">{(form.phoneFormatted||"").replace(/\s/g,"").length}/9{isValid(form.phoneFormatted||"")?" ✅":""}</span>
+                  <span className="cp-field-hint">{(form.phoneFormatted||"").replace(/\s/g,"").length}/9{isValid(form.phoneFormatted||"")? <AppIcon name="checkCircle" size={14} /> :""}</span>
                 </div>
                 <div className="cp-form-field">
                   <label>{t.email}</label>
@@ -160,7 +161,7 @@ export default function ProfilePage() {
                   <label>{t.note}</label>
                   <input type="text" placeholder={t.notePlaceholder} value={form.note||""} onChange={e=>setForm(f=>({...f,note:e.target.value}))} />
                 </div>
-                <button className="cp-next-btn" onClick={saveData}>{t.save}</button>
+                <button className="cp-next-btn" onClick={saveData}><AppIcon name="check" size={16} /> {t.save}</button>
                 {profile.name && <button className="cp-continue-btn" onClick={() => setEditing(false)}>{t.cancel}</button>}
               </div>
             )}
@@ -172,15 +173,15 @@ export default function ProfilePage() {
           <>
             {!profile.phone ? (
               <div className="pf-card" style={{textAlign:"center",padding:"40px 20px"}}>
-                <div style={{fontSize:"3rem",marginBottom:12}}>📋</div>
+                <div style={{marginBottom:12,color:"var(--g)"}}><AppIcon name="list" size={44} /></div>
                 <p style={{fontWeight:700,marginBottom:16}}>{t.noOrders}</p>
-                <button className="cp-next-btn" onClick={() => {setTab("profile");setEditing(true);}}>👤 {t.fillProfile}</button>
+                <button className="cp-next-btn" onClick={() => {setTab("profile");setEditing(true);}}><AppIcon name="profile" size={16} /> {t.fillProfile}</button>
               </div>
             ) : ordersLoading ? (
               <div style={{textAlign:"center",padding:60}}><div className="spinner" style={{margin:"0 auto"}} /></div>
             ) : orders.length===0 ? (
               <div className="pf-card" style={{textAlign:"center",padding:"40px 20px"}}>
-                <div style={{fontSize:"3rem",marginBottom:12,opacity:0.3}}>🛒</div>
+                <div style={{marginBottom:12,opacity:0.3,color:"var(--g)"}}><AppIcon name="cart" size={44} /></div>
                 <p style={{fontWeight:700,color:"var(--g4)",marginBottom:16}}>{t.noOrders}</p>
                 <button className="cp-next-btn" onClick={() => navigate("/")}>{t.goToMenu}</button>
               </div>
@@ -189,13 +190,13 @@ export default function ProfilePage() {
                 {orders.map(order => (
                   <div key={order._id} className="pf-order-card">
                     <div className="pf-order-header">
-                      <span className="pf-order-date">🗓 {new Date(order.createdAt).toLocaleString()}</span>
+                      <span className="pf-order-date"><AppIcon name="calendar" size={14} /> {new Date(order.createdAt).toLocaleString()}</span>
                       <span style={{color:STATUS_COLOR[order.status]||"#888",background:(STATUS_COLOR[order.status]||"#888")+"18",padding:"3px 12px",borderRadius:20,fontSize:"0.8rem",fontWeight:700}}>
                         {statusLabel[order.status]||order.status}
                       </span>
                     </div>
                     <div className="pf-order-items">{order.items.map((item,i) => <span key={i} className="cp-summary-chip">{item.title} × {item.quantity}</span>)}</div>
-                    {order.address && <div style={{fontSize:"0.82rem",color:"var(--gray)",marginTop:6}}>📍 {order.address}</div>}
+                    {order.address && <div style={{fontSize:"0.82rem",color:"var(--gray)",marginTop:6}}><AppIcon name="location" size={14} /> {order.address}</div>}
                     <div className="pf-order-total">{t.total}: <strong>{order.totalPrice?.toLocaleString()} so'm</strong></div>
                   </div>
                 ))}
@@ -209,7 +210,7 @@ export default function ProfilePage() {
           <>
             {addresses.length===0 && !addingAddr ? (
               <div className="pf-card" style={{textAlign:"center",padding:"40px 20px"}}>
-                <div style={{fontSize:"3rem",marginBottom:12,opacity:0.3}}>📍</div>
+                <div style={{marginBottom:12,opacity:0.3,color:"var(--g)"}}><AppIcon name="location" size={44} /></div>
                 <p style={{fontWeight:700,color:"var(--g4)",marginBottom:16}}>{t.noAddresses}</p>
                 <button className="cp-next-btn" onClick={() => setAddingAddr(true)}>{t.addAddress}</button>
               </div>
@@ -218,8 +219,8 @@ export default function ProfilePage() {
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
                   {addresses.map(addr => (
                     <div key={addr.id} className="pf-addr-card">
-                      <div><div className="pf-addr-label">📍 {addr.label}</div><div className="pf-addr-text">{addr.address}</div></div>
-                      <button onClick={() => removeAddress(addr.id)} className="cp-item-remove" style={{fontSize:"1.1rem"}}>🗑</button>
+                      <div><div className="pf-addr-label"><AppIcon name="location" size={14} /> {addr.label}</div><div className="pf-addr-text">{addr.address}</div></div>
+                      <button onClick={() => removeAddress(addr.id)} className="cp-item-remove" style={{fontSize:"1.1rem"}}><AppIcon name="trash" size={18} /></button>
                     </div>
                   ))}
                 </div>
@@ -228,7 +229,7 @@ export default function ProfilePage() {
             )}
             {addingAddr && (
               <div className="pf-card" style={{marginTop:12}}>
-                <div className="cp-form-section-title" style={{marginBottom:14}}>📍 {t.deliveryAddress}</div>
+                <div className="cp-form-section-title" style={{marginBottom:14}}><AppIcon name="location" size={16} /> {t.deliveryAddress}</div>
                 <div className="cp-form-field">
                   <label>{t.addrLabel} *</label>
                   <input type="text" placeholder={t.addrLabelPlaceholder} value={newAddr.label} onChange={e=>setNewAddr(a=>({...a,label:e.target.value}))} />
@@ -241,7 +242,7 @@ export default function ProfilePage() {
                   <input type="text" placeholder={t.addrPlaceholder} value={newAddr.address} onChange={e=>setNewAddr(a=>({...a,address:e.target.value}))} />
                 </div>
                 <div style={{display:"flex",gap:10,marginTop:8}}>
-                  <button className="cp-next-btn" style={{flex:1}} onClick={addAddress}>{t.save}</button>
+                  <button className="cp-next-btn" style={{flex:1}} onClick={addAddress}><AppIcon name="check" size={16} /> {t.save}</button>
                   <button className="cp-continue-btn" style={{flex:1}} onClick={() => {setAddingAddr(false);setNewAddr({label:"",address:""});}}>{t.cancel}</button>
                 </div>
               </div>
@@ -257,20 +258,20 @@ function BottomNav({ active, cartCount = 0, navigate }) {
   return (
     <nav className="bottom-nav">
       <button className={`bottom-nav-btn ${active==="menu"?"active":""}`} onClick={() => navigate("/")}>
-        <span className="bottom-nav-icon">🍽</span>
+        <span className="bottom-nav-icon"><AppIcon name="menu" size={22} /></span>
         <span>Menyu</span>
       </button>
       <button className={`bottom-nav-btn ${active==="cart"?"active":""}`} onClick={() => navigate("/cart")} style={{position:"relative"}}>
-        <span className="bottom-nav-icon">🛒</span>
+        <span className="bottom-nav-icon"><AppIcon name="cart" size={22} /></span>
         <span>Savat</span>
         {cartCount > 0 && <span className="bottom-nav-badge">{cartCount}</span>}
       </button>
       <button className={`bottom-nav-btn ${active==="orders"?"active":""}`} onClick={() => navigate("/orders")}>
-        <span className="bottom-nav-icon">📦</span>
+        <span className="bottom-nav-icon"><AppIcon name="orders" size={22} /></span>
         <span>Buyurtmalar</span>
       </button>
       <button className={`bottom-nav-btn ${active==="profile"?"active":""}`} onClick={() => navigate("/profile")}>
-        <span className="bottom-nav-icon">👤</span>
+        <span className="bottom-nav-icon"><AppIcon name="profile" size={22} /></span>
         <span>Profil</span>
       </button>
     </nav>
