@@ -141,12 +141,29 @@ export default function Menu() {
   const initials = profile?.name ? profile.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : null;
 
   if (loading) return (
-    <div className="g-loading">
-      <div className="g-spinner-wrap">
-        <div className="g-spinner-ring" />
-        <img src={LOGO_GREEN} alt="Yalpiz" style={{ height: 40, width: "auto", objectFit: "contain" }} />
+    <div className="g-root visible">
+      <div className="sk-top">
+        <div className="sk sk-search" />
+        <div className="sk-tabs">
+          {[...Array(5)].map((_, i) => <div key={i} className="sk sk-tab" />)}
+        </div>
       </div>
-      <p className="g-loading-text">{t.loading}</p>
+      <div className="g-main">
+        <div className="sk sk-banner" />
+        <div className="sk sk-section" />
+        <div className="g-grid">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="g-card sk-card">
+              <div className="sk sk-img" />
+              <div className="sk-card-body">
+                <div className="sk sk-line w80" />
+                <div className="sk sk-line w55" />
+                <div className="sk sk-line w40 mt" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -222,6 +239,7 @@ export default function Menu() {
       ) : (
         <main className="g-main">
           <HeroBanner banners={banner} t={t} foods={foods} navigate={navigate} />
+          <PopularRow foods={foods} lang={lang} navigate={navigate} t={t} />
           {categoriesRaw.map((cat, idx) => {
             const key = getCatKey(cat);
             return (
@@ -467,6 +485,41 @@ function HeroBanner({ banners, t, foods, navigate }) {
 }
 
 
+function PopularRow({ foods, lang, navigate, t }) {
+  // Mashhur: mavjud taomlardan eng qimmat 10 tasi (premium/tavsiya)
+  const popular = foods
+    .filter(foodIsAvailable)
+    .slice()
+    .sort((a, b) => (b.price || 0) - (a.price || 0))
+    .slice(0, 10);
+  if (popular.length < 3) return null;
+  return (
+    <div className="g-pop">
+      <div className="g-pop-head">
+        <span className="g-pop-title">🔥 {t.popular || "Mashhur taomlar"}</span>
+      </div>
+      <div className="g-pop-scroll">
+        {popular.map(food => {
+          const title = getField(food.title, lang);
+          return (
+            <div key={food._id} className="g-pop-card" onClick={() => navigate(`/food/${food._id}`)}>
+              <div className="g-pop-img">
+                {food.image
+                  ? <img src={food.image} alt={title} />
+                  : <div className="g-pop-ph">🍽</div>}
+              </div>
+              <div className="g-pop-body">
+                <p className="g-pop-name">{title}</p>
+                <p className="g-pop-price">{food.price.toLocaleString()}<small> so'm</small></p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function FoodCard({ food, index, cart, lang, onOpen, onAdd, onChangeQty, t }) {
   const [imgErr, setImgErr] = useState(false);
   const inCart = cart.find(i => i._id === food._id);
@@ -486,7 +539,7 @@ function FoodCard({ food, index, cart, lang, onOpen, onAdd, onChangeQty, t }) {
         <h3 className="g-card-title">{title}</h3>
         <p className="g-card-desc">{desc}</p>
         <div className="g-card-footer">
-          <span className="g-card-price">{food.price.toLocaleString()} so'm</span>
+          <span className="g-card-price">{food.price.toLocaleString()}<small> so'm</small></span>
           {!available ? (
             <button className="g-card-add-btn disabled" disabled>×</button>
           ) : inCart ? (
