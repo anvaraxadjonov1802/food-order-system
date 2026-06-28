@@ -13,7 +13,7 @@ import {
   Smartphone, Home, Car, ClipboardList, Pencil, Plus, Save, Image as ImageIcon,
   ChefHat, Clock, PartyPopper, Rocket, Map as MapIcon, RefreshCw, AlertTriangle,
   Lock, Frown, Inbox, CircleHelp, Building2, Calendar, Mail, FileText, Palette,
-  Megaphone, Eye, Ban, Cloud, Camera, Globe, ArrowRight, ArrowLeft, Tag, Video,
+  Megaphone, Eye, Ban, Cloud, Camera, Globe, ArrowRight, ArrowLeft, Tag, Video, Minus,
 } from "lucide-react";
 
 // Butun ilova uchun yagona stroke qalinligi (minimalistik ko'rinish)
@@ -73,7 +73,7 @@ const REGISTRY = {
   ordersOpen: PackageOpen, profile: User, home: Home, search: Search,
   // amallar
   close: X, check: Check, checkCircle: CheckCircle2, trash: Trash2,
-  edit: Pencil, plus: Plus, save: Save, refresh: RefreshCw, eye: Eye,
+  edit: Pencil, plus: Plus, minus: Minus, save: Save, refresh: RefreshCw, eye: Eye,
   ban: Ban, addUser: UserPlus, camera: Camera, image: ImageIcon, cloud: Cloud,
   // to'lov / pul
   card: CreditCard, cash: Wallet, money: Banknote,

@@ -528,14 +528,14 @@ function FoodCard({ food, index, cart, lang, onOpen, onAdd, onChangeQty, t }) {
         <div className="g-card-footer">
           <span className="g-card-price">{food.price.toLocaleString()}<small> so'm</small></span>
           {!available ? (
-            <button className="g-card-add-btn disabled" disabled>×</button>
+            <button className="g-card-add-btn disabled" disabled aria-label="Mavjud emas"><AppIcon name="close" size={18} /></button>
           ) : inCart ? (
             <div className="g-card-qty" onClick={e => e.stopPropagation()}>
-              <button className="g-card-qty-btn minus" onClick={e => onChangeQty(food._id, -1, e)}>−</button>
+              <button className="g-card-qty-btn minus" onClick={e => onChangeQty(food._id, -1, e)} aria-label="Kamaytirish"><AppIcon name="minus" size={16} strokeWidth={2.5} /></button>
               <span className="g-card-qty-num">{inCart.qty}</span>
-              <button className="g-card-qty-btn plus" onClick={e => onChangeQty(food._id, +1, e)}>+</button>
+              <button className="g-card-qty-btn plus" onClick={e => onChangeQty(food._id, +1, e)} aria-label="Ko‘paytirish"><AppIcon name="plus" size={16} strokeWidth={2.5} /></button>
             </div>
-          ) : <button className="g-card-add-btn" onClick={e => onAdd(food, e)}>+</button>}
+          ) : <button className="g-card-add-btn" onClick={e => onAdd(food, e)} aria-label="Savatga qo‘shish"><AppIcon name="plus" size={20} strokeWidth={2.5} /></button>}
         </div>
       </div>
     </div>
