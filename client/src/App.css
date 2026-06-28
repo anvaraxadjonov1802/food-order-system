@@ -222,16 +222,45 @@ h1, h2, h3, h4, h5, h6 {
 .g-section-title { font-size: 0.95rem; font-weight: 700; color: var(--g4); margin-bottom: 12px; }
 
 /* ─── HERO BANNER ──────────────────────────────────────────── */
-.g-hero {
-  border-radius: 14px; padding: 16px 18px;
-  margin-bottom: 16px; color: white;
-  aspect-ratio: 16 / 6; width: 100%;
-  display: flex; justify-content: space-between; align-items: flex-end; gap: 12px;
-  position: relative; overflow: hidden;
+.g-hero-viewport {
+  position: relative; width: 100%; aspect-ratio: 16 / 6;
+  border-radius: 14px; overflow: hidden; margin-bottom: 16px;
+  touch-action: pan-y; background: var(--g);
+}
+.g-hero-track { display: flex; height: 100%; will-change: transform; }
+.g-hero-track.animate { transition: transform 0.5s cubic-bezier(.4, 0, .2, 1); }
+.g-hero-slide {
+  position: relative; flex: 0 0 100%; width: 100%; height: 100%;
+  display: flex; align-items: flex-end; padding: 16px 18px;
+  box-sizing: border-box; color: white; overflow: hidden;
 }
 .g-hero-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.g-hero-media.is-image { animation: kenburns 12s ease-in-out infinite alternate; }
 .g-hero-overlay { position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.30) 45%, rgba(0,0,0,0.62) 100%); }
+.g-hero-accent-line { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(163,212,91,0.5); z-index: 2; }
+.g-hero-content { position: relative; z-index: 2; flex: 1; }
+.g-hero-logo { height: 26px; width: auto; max-width: 110px; object-fit: contain; margin-bottom: 8px; opacity: 0.9; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); }
+.g-hero-events { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.g-hero-event { background: rgba(255,255,255,0.18); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+.g-hero-btn { margin-top: 12px; background: #fff; border: none; border-radius: 20px; padding: 8px 18px; font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.12); } }
+
+/* Stories-uslubidagi progress indikator */
+.g-hero-progress { display: flex; gap: 5px; margin-top: 8px; padding: 0 2px; }
+.g-hero-prog-seg { position: relative; flex: 1; height: 4px; border: none; background: none; padding: 0; cursor: pointer; border-radius: 4px; overflow: hidden; }
+.g-hero-prog-bg { position: absolute; inset: 0; background: var(--border); border-radius: 4px; }
+.g-hero-prog-fill { position: absolute; inset: 0; background: var(--g); border-radius: 4px; transform-origin: left; transform: scaleX(0); }
+.g-hero-prog-fill.done { transform: scaleX(1); }
+.g-hero-prog-fill.active { animation: heroProg 4s linear forwards; }
+.g-hero-prog-fill.active.paused { animation-play-state: paused; }
+@keyframes heroProg { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .g-hero-media.is-image { animation: none; }
+  .g-hero-track.animate { transition: none; }
+}
 .g-hero-title { font-size: 1.15rem; font-weight: 900; line-height: 1.2; margin-bottom: 4px; font-family: 'Playfair Display', serif; }
 .g-hero-accent { color: var(--lime); }
 .g-hero-desc { font-size: 0.82rem; color: rgba(255,255,255,0.82); font-weight: 500; }
@@ -631,7 +660,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ─── RESPONSIVE ───────────────────────────────────────────── */
 @media(max-width:480px){
-  .g-hero { padding:14px; }
+  .g-hero-slide { padding:14px; }
   .g-hero-title { font-size:1rem; }
   .g-grid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
   .g-card-img-wrap { height:140px; }
@@ -907,13 +936,13 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ─── PALITRANI YENGILLASHTIRISH (banner sheen + lime aksent) ─── */
 /* Banner: tekis to'q yashil o'rniga yumshoq lime nur — yangiroq/yengilroq his */
-.g-hero::after {
+.g-hero-slide::after {
   content: ""; position: absolute; top: -45%; right: -12%;
   width: 230px; height: 230px; border-radius: 50%;
   background: radial-gradient(circle, rgba(163,212,91,0.30), transparent 70%);
   pointer-events: none; z-index: 0;
 }
-.g-hero::before {
+.g-hero-slide::before {
   content: ""; position: absolute; bottom: -55%; left: -8%;
   width: 180px; height: 180px; border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,0.10), transparent 70%);

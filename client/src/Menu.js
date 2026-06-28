@@ -283,13 +283,18 @@ function BottomNav({ active, cartCount, navigate }) {
 
 function HeroBanner({ banners, t, foods, navigate }) {
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [drag, setDrag] = useState(0);
+  const startX = useRef(null);
 
-  // Auto-slide har 4 soniyada
+  // Avtomat almashish — har slaydda qayta o'rnatiladi (progress bilan sinxron),
+  // pauza yoki swipe paytida to'xtaydi
   useEffect(() => {
-    if (!banners || banners.length <= 1) return;
-    const timer = setInterval(() => setActive(a => (a + 1) % banners.length), 4000);
-    return () => clearInterval(timer);
-  }, [banners]);
+    if (paused || dragging || !banners || banners.length <= 1) return;
+    const id = setTimeout(() => setActive(a => (a + 1) % banners.length), 4000);
+    return () => clearTimeout(id);
+  }, [active, paused, dragging, banners]);
 
   if (!banners || banners.length === 0) {
     banners = [{ _id:"default", title:t.menuTitle, subtitle:t.menuSubtitle,
@@ -297,7 +302,19 @@ function HeroBanner({ banners, t, foods, navigate }) {
       mediaUrl:"", events:[], promoCategory:"", promoLabel:"Aksiya taomlar" }];
   }
 
-  const b = banners[active] || banners[0];
+  const n = banners.length;
+  const idx = n ? ((active % n) + n) % n : 0;
+  const b = banners[idx] || banners[0];
+
+  const goTo = (i) => setActive(((i % n) + n) % n);
+  const onTouchStart = (e) => { startX.current = e.touches[0].clientX; setDragging(true); setPaused(true); };
+  const onTouchMove = (e) => { if (startX.current == null) return; setDrag(e.touches[0].clientX - startX.current); };
+  const onTouchEnd = () => {
+    const dx = drag; startX.current = null; setDragging(false); setDrag(0);
+    if (n > 1 && dx > 45) goTo(idx - 1);
+    else if (n > 1 && dx < -45) goTo(idx + 1);
+    setPaused(false);
+  };
 
   // Aksiya taomlar - promoCategory bo'yicha filter
   const promoFoods = b.promoCategory
@@ -310,79 +327,63 @@ function HeroBanner({ banners, t, foods, navigate }) {
   return (
     <div style={{ marginBottom: promoFoods.length > 0 ? 8 : 22 }}>
 
-      {/* ─── BANNER SLIDE ─────────────────────────────── */}
-      <div className="g-hero" style={{
-        background: b.bgColor, position:"relative",
-        overflow:"hidden", transition:"background 0.4s"
-      }}>
-        {/* Background media — to'liq ko'rinadi, ustiga o'qiladigan overlay */}
-        {b.mediaType === "image" && b.mediaUrl && (
-          <img src={b.mediaUrl} alt="banner" className="g-hero-media" />
-        )}
-        {b.mediaType === "video" && b.mediaUrl && (
-          <video autoPlay muted loop playsInline className="g-hero-media">
-            <source src={b.mediaUrl} />
-          </video>
-        )}
-        {b.mediaType !== "none" && b.mediaUrl && <div className="g-hero-overlay" />}
-        <div style={{
-          position:"absolute",bottom:0,left:0,right:0,
-          height:3,background:"rgba(163,212,91,0.5)",zIndex:2
-        }} />
+      {/* ─── BANNER KARUSEL (swipe + silliq o'tish) ───── */}
+      <div className="g-hero-viewport"
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <div className={`g-hero-track${dragging ? "" : " animate"}`}
+          style={{ transform: `translateX(calc(${-idx * 100}% + ${drag}px))` }}>
+          {banners.map((bn, i) => (
+            <div key={bn._id || i} className="g-hero-slide" style={{ background: bn.bgColor }}>
+              {/* Media — to'liq ko'rinadi, rasmda yengil Ken Burns zoom */}
+              {bn.mediaType === "image" && bn.mediaUrl && (
+                <img src={bn.mediaUrl} alt="" className="g-hero-media is-image" draggable="false" />
+              )}
+              {bn.mediaType === "video" && bn.mediaUrl && (
+                <video autoPlay muted loop playsInline className="g-hero-media">
+                  <source src={bn.mediaUrl} />
+                </video>
+              )}
+              {bn.mediaType !== "none" && bn.mediaUrl && <div className="g-hero-overlay" />}
+              <div className="g-hero-accent-line" />
 
-        {/* Banner content */}
-        <div style={{ position:"relative",zIndex:2,flex:1 }}>
-          <img src={LOGO_WHITE} alt="Yalpiz" style={{
-            height:26,width:"auto",maxWidth:110,objectFit:"contain",
-            marginBottom:8,opacity:0.9,
-            filter:"drop-shadow(0 1px 3px rgba(0,0,0,0.3))"
-          }} />
-          <h1 className="g-hero-title">
-            {b.title}<br/>
-            <span className="g-hero-accent">{b.subtitle}</span>
-          </h1>
-          {b.description && (
-            <p className="g-hero-desc">{b.description}</p>
-          )}
-          {/* Event chiplar */}
-          {b.events?.length > 0 && (
-            <div style={{ display:"flex",flexWrap:"wrap",gap:8,marginTop:10 }}>
-              {b.events.map(ev => (
-                <span key={ev.id} style={{
-                  background:"rgba(255,255,255,0.18)",color:"white",
-                  padding:"4px 12px",borderRadius:20,
-                  fontSize:"0.8rem",fontWeight:700
-                }}>
-                  {ev.emoji} {ev.label}
-                </span>
-              ))}
+              <div className="g-hero-content">
+                <img src={LOGO_WHITE} alt="Yalpiz" className="g-hero-logo" draggable="false" />
+                <h1 className="g-hero-title">
+                  {bn.title}<br/>
+                  <span className="g-hero-accent">{bn.subtitle}</span>
+                </h1>
+                {bn.description && <p className="g-hero-desc">{bn.description}</p>}
+                {bn.events?.length > 0 && (
+                  <div className="g-hero-events">
+                    {bn.events.map(ev => (
+                      <span key={ev.id} className="g-hero-event">{ev.emoji} {ev.label}</span>
+                    ))}
+                  </div>
+                )}
+                {bn.buttonText && (
+                  <button className="g-hero-btn" style={{ color: bn.bgColor }}
+                    onClick={() => bn.buttonLink && window.open(bn.buttonLink, "_blank")}>
+                    {bn.buttonText}
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-          {/* Tugma */}
-          {b.buttonText && (
-            <button
-              onClick={() => b.buttonLink && window.open(b.buttonLink,"_blank")}
-              style={{
-                marginTop:12,background:"white",color:b.bgColor,
-                border:"none",borderRadius:20,padding:"8px 18px",
-                fontWeight:800,fontSize:"0.85rem",cursor:"pointer"
-              }}>
-              {b.buttonText}
-            </button>
-          )}
+          ))}
         </div>
       </div>
 
-      {/* ─── DOTS (2+ banner) ─────────────────────────── */}
-      {banners.length > 1 && (
-        <div style={{ display:"flex",justifyContent:"center",gap:6,marginTop:8 }}>
+      {/* ─── PROGRESS (2+ banner) ─────────────────────── */}
+      {n > 1 && (
+        <div className="g-hero-progress">
           {banners.map((_, i) => (
-            <button key={i} onClick={() => setActive(i)} style={{
-              width: i === active ? 22 : 8, height:8,
-              borderRadius:20,border:"none",cursor:"pointer",
-              background: i === active ? "var(--g)" : "var(--border)",
-              transition:"all 0.3s",padding:0
-            }} />
+            <button key={i} className="g-hero-prog-seg" onClick={() => goTo(i)} aria-label={`Banner ${i + 1}`}>
+              <span className="g-hero-prog-bg" />
+              {i < idx && <span className="g-hero-prog-fill done" />}
+              {i === idx && (
+                <span key={active}
+                  className={`g-hero-prog-fill active${paused || dragging ? " paused" : ""}`} />
+              )}
+            </button>
           ))}
         </div>
       )}
