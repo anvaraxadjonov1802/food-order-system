@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, TRANSLATIONS } from "./i18n";
 import { AppIcon } from "./icons";
+import { thumb } from "./img";
 
 import paymeLogo from "./assets/payme-logo.png";
 import clickLogo from "./assets/click-logo.png";
@@ -288,8 +289,8 @@ export default function CartPage() {
               <div className="cp-items">
                 {cart.map(item => (
                   <div key={item._id} className="cp-item">
-                    <img src={item.image || "https://placehold.co/80/e8f5ee/1d6b3e?text=+"} alt={getField(item.title, lang)} className="cp-item-img"
-                      onError={e => e.target.src="https://placehold.co/80/e8f5ee/1d6b3e?text=+"} />
+                    <img src={thumb(item.image, 160) || "https://placehold.co/80/e8f5ee/1d6b3e?text=+"} alt={getField(item.title, lang)} className="cp-item-img" loading="lazy" decoding="async"
+                      onError={e => { if (e.currentTarget.dataset.fb) { e.target.src="https://placehold.co/80/e8f5ee/1d6b3e?text=+"; } else { e.currentTarget.dataset.fb="1"; e.target.src=item.image || "https://placehold.co/80/e8f5ee/1d6b3e?text=+"; } }} />
                     <div className="cp-item-info">
                       <p className="cp-item-title">{getField(item.title, lang)}</p>
                       <p className="cp-item-price">{item.price.toLocaleString()} so'm</p>
