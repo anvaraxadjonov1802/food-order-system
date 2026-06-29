@@ -4,6 +4,7 @@ import "./App.css";
 import { getLang, setLangStore, TRANSLATIONS, LOGO_GREEN, LOGO_WHITE } from "./i18n";
 import { CategoryIcon, AppIcon } from "./icons";
 import { cachedGet } from "./api";
+import { thumb, imgFallback } from "./img";
 
 const CATEGORY_ORDER = [
   "Birinchi taomlar", "Suyuq taomlar", "Sho'rvalar",
@@ -434,7 +435,7 @@ function HeroBanner({ banners, t, foods, navigate }) {
                   {/* Rasm */}
                   <div style={{ height:80,background:"var(--g3)",position:"relative",overflow:"hidden" }}>
                     {food.image
-                      ? <img src={food.image} alt={title} style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                      ? <img src={thumb(food.image, 300)} alt={title} loading="lazy" decoding="async" onError={(e) => imgFallback(e, food.image)} style={{ width:"100%",height:"100%",objectFit:"cover" }} />
                       : <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--g)" }}><AppIcon name="menu" size={26} /></div>
                     }
                     <span style={{
@@ -487,7 +488,7 @@ function PopularRow({ foods, lang, navigate, t }) {
             <div key={food._id} className="g-pop-card" onClick={() => navigate(`/food/${food._id}`)}>
               <div className="g-pop-img">
                 {food.image
-                  ? <img src={food.image} alt={title} />
+                  ? <img src={thumb(food.image, 360)} alt={title} loading="lazy" decoding="async" onError={(e) => imgFallback(e, food.image)} />
                   : <div className="g-pop-ph"><AppIcon name="menu" size={28} /></div>}
               </div>
               <div className="g-pop-body">
@@ -512,7 +513,8 @@ function FoodCard({ food, index, cart, lang, onOpen, onAdd, onChangeQty, t }) {
     <div className={`g-card ${!available ? "g-card-unavailable" : ""}`} style={{ animationDelay:`${index * 0.05}s` }} onClick={onOpen}>
       <div className="g-card-img-wrap">
         {!imgErr && food.image ? (
-          <img src={food.image} alt={title} className="g-card-img" onError={() => setImgErr(true)} />
+          <img src={thumb(food.image, 480)} alt={title} className="g-card-img" loading="lazy" decoding="async"
+            onError={(e) => { if (e.currentTarget.dataset.fb) { setImgErr(true); } else { e.currentTarget.dataset.fb = "1"; e.currentTarget.src = food.image; } }} />
         ) : <div className="g-card-img-placeholder"><AppIcon name="menu" size={32} /></div>}
         {!available && <span className="g-card-unavailable-badge">Hozircha yo‘q</span>}
         {inCart && available && <span className="g-card-in-cart"><AppIcon name="check" size={13} strokeWidth={3} /> {inCart.qty}</span>}

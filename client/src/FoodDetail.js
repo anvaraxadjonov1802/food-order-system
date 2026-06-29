@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, TRANSLATIONS } from "./i18n";
 import { AppIcon } from "./icons";
+import { thumb } from "./img";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 const getCart = () => { try { return JSON.parse(localStorage.getItem("cart") || "[]"); } catch { return []; } };
@@ -87,7 +88,8 @@ export default function FoodDetail() {
 
       <div className="fd-img-wrap">
         {!imgErr && food.image ? (
-          <img src={food.image} alt={title} className="fd-img" onError={() => setImgErr(true)} />
+          <img src={thumb(food.image, 800)} alt={title} className="fd-img" decoding="async"
+            onError={(e) => { if (e.currentTarget.dataset.fb) { setImgErr(true); } else { e.currentTarget.dataset.fb = "1"; e.currentTarget.src = food.image; } }} />
         ) : (
           <div className="fd-img-placeholder">
             <span style={{color:"var(--g)"}}><AppIcon name="menu" size={48} /></span>
