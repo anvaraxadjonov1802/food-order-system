@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { getLang, setLangStore, TRANSLATIONS, LOGO_GREEN, LOGO_WHITE } from "./i18n";
 import { CategoryIcon, AppIcon } from "./icons";
-
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { cachedGet } from "./api";
 
 const CATEGORY_ORDER = [
   "Birinchi taomlar", "Suyuq taomlar", "Sho'rvalar",
@@ -70,8 +69,8 @@ export default function Menu() {
     const urlCat = new URLSearchParams(window.location.search).get("cat");
 
     Promise.all([
-      fetch(`${API}/api/foods`).then(r => r.json()),
-      fetch(`${API}/api/banners`).then(r => r.json()).catch(() => []),
+      cachedGet("/api/foods"),
+      cachedGet("/api/banners").catch(() => []),
     ]).then(([fd, bd]) => {
       const arr = Array.isArray(fd) ? fd : [];
       setFoods(arr);
