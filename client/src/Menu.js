@@ -180,10 +180,6 @@ export default function Menu() {
             ) : (
               <button className="g-login-btn" onClick={() => navigate("/login-user")}>{t.login}</button>
             )}
-            <button className="g-cart-nav" onClick={() => navigate("/cart")}>
-              <AppIcon name="cart" size={22} />
-              {cartCount > 0 && <span className="g-cart-badge">{cartCount}</span>}
-            </button>
           </div>
         </div>
         <div className="g-search-bar">
