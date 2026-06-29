@@ -72,6 +72,7 @@ app.use(require("./routes/orders.routes"));
 app.use(require("./routes/payments.routes"));
 app.use(require("./routes/webhooks.routes"));
 app.use(require("./routes/banners.routes"));
+app.use(require("./routes/customers.routes"));
 
 // ════ FON JARAYONLARI ════════════════════════════════════════════════════════
 // Ko'p instance bo'lsa: lock orqali faqat BITTA instance sweepni bajaradi (dublikatsiz).
