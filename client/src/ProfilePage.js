@@ -113,6 +113,15 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {process.env.REACT_APP_BOT_USERNAME && (
+          <a className="pf-tg-subscribe" href={`https://t.me/${process.env.REACT_APP_BOT_USERNAME}?start=web`}
+            target="_blank" rel="noopener noreferrer"
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:"#229ED9",
+              color:"#fff", fontWeight:700, padding:"12px 16px", borderRadius:14, textDecoration:"none", margin:"14px 0" }}>
+            ✈️ Telegram botga obuna bo'ling — aksiya va yangiliklar
+          </a>
+        )}
+
         <div className="pf-tabs">
           {[{key:"profile",icon:"profile",label:t.profile},{key:"orders",icon:"list",label:t.orders},{key:"addresses",icon:"location",label:t.addresses}].map(tb => (
             <button key={tb.key} className={`pf-tab ${tab===tb.key?"active":""}`} onClick={() => setTab(tb.key)}><AppIcon name={tb.icon} size={16} /> {tb.label}</button>

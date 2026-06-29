@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const Order = require("../models/Order");
+const BotSubscriber = require("../models/BotSubscriber");
 const { tgApi, TG_STAFF, TG_CHAT, TG_CHANNEL } = require("../integrations/telegram");
 const { STAFF_HELP, ORDER_STATUSES } = require("../config/constants");
 const { sendActiveOrdersList, sendTodayStats, sendOrderSearch, editStaffOrderMessage } = require("../services/orderMessaging");
@@ -24,15 +25,32 @@ router.post("/webhook/telegram", async (req, res) => {
 
     const update = req.body || {};
 
-    // Guruhda /id yozilsa — chat ID ni aytadi (sozlashni osonlashtiradi)
     const msgText = update.message?.text || "";
-
-    // Allowlist: /id dan tashqari hamma narsa ruxsat etilgan chatlardan kelishi shart
     const incomingChatId = update.message?.chat?.id ?? update.callback_query?.message?.chat?.id;
-    const isIdCmd = msgText.trim().startsWith("/id");
-    if (!isIdCmd && incomingChatId !== undefined && !isAllowedChat(incomingChatId)) {
-      return res.status(200).json({ ok: true, ignored: "chat_not_allowed" });
+
+    // /start — staff bo'lsa yordam; mijoz (private chat) bo'lsa OBUNACHI sifatida saqlanadi
+    if (msgText.trim().startsWith("/start")) {
+      const cid = String(update.message.chat.id);
+      if (isAllowedChat(cid)) {
+        await tgApi("sendMessage", { chat_id: cid, text: STAFF_HELP, parse_mode: "HTML" });
+      } else {
+        if (update.message.chat.type === "private") {
+          await BotSubscriber.updateOne(
+            { chatId: cid },
+            { $set: { chatId: cid, firstName: update.message.from?.first_name || "", username: update.message.from?.username || "", active: true } },
+            { upsert: true }
+          ).catch(() => {});
+        }
+        await tgApi("sendMessage", {
+          chat_id: cid,
+          text: `🌿 <b>Yalpiz</b> botiga obuna bo'ldingiz! Yangiliklar va aksiyalar shu yerga keladi.${process.env.FRONTEND_URL ? `\n\n🍽 Buyurtma berish: ${process.env.FRONTEND_URL}` : ""}`,
+          parse_mode: "HTML",
+        });
+      }
+      return res.sendStatus(200);
     }
+
+    // /id — har kimdan ruxsat (sozlash uchun)
     if (msgText.trim().startsWith("/id")) {
       await tgApi("sendMessage", {
         chat_id: update.message.chat.id,
@@ -42,12 +60,17 @@ router.post("/webhook/telegram", async (req, res) => {
       return res.sendStatus(200);
     }
 
+    // Allowlist: qolgan buyruq/tugmalar faqat ruxsat etilgan chatlardan
+    if (incomingChatId !== undefined && !isAllowedChat(incomingChatId)) {
+      return res.status(200).json({ ok: true, ignored: "chat_not_allowed" });
+    }
+
     // Xodimlar komandalar (matnli)
     if (msgText.trim()) {
       const text = msgText.trim();
       const chatId = update.message.chat.id;
 
-      if (text.startsWith("/start") || text.startsWith("/help")) {
+      if (text.startsWith("/help")) {
         await tgApi("sendMessage", { chat_id: chatId, text: STAFF_HELP, parse_mode: "HTML" });
         return res.sendStatus(200);
       }

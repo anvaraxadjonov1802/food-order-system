@@ -8,6 +8,8 @@ import OrdersTab from "./admin/OrdersTab";
 import BannerTab from "./admin/BannerTab";
 import FilialsTab from "./admin/FilialsTab";
 import AdminsTab from "./admin/AdminsTab";
+import CustomersTab from "./admin/CustomersTab";
+import BroadcastTab from "./admin/BroadcastTab";
 
 // Admin panel — ingichka shell: topbar + tablar + faol tab komponenti.
 // Har bir tab mustaqil; foods/categories Foods va Banner tablar bo'lishadi.
@@ -58,6 +60,8 @@ export default function Admin() {
         </button>
         <button className={`admin-tab ${tab === "banner" ? "active" : ""}`} onClick={() => setTab("banner")}><AppIcon name="palette" size={16} /> Banner</button>
         <button className={`admin-tab ${tab === "filials" ? "active" : ""}`} onClick={() => setTab("filials")}><AppIcon name="building" size={16} /> Filiallar</button>
+        <button className={`admin-tab ${tab === "customers" ? "active" : ""}`} onClick={() => setTab("customers")}>👥 Mijozlar</button>
+        <button className={`admin-tab ${tab === "broadcast" ? "active" : ""}`} onClick={() => setTab("broadcast")}>📢 Reklama</button>
         {savedUser.role === "superadmin" && (
           <button className={`admin-tab ${tab === "admins" ? "active" : ""}`} onClick={() => setTab("admins")}><AppIcon name="profile" size={16} /> Adminlar</button>
         )}
@@ -70,6 +74,8 @@ export default function Admin() {
         {tab === "orders" && <OrdersTab onNewCount={setNewOrderCount} />}
         {tab === "banner" && <BannerTab categories={categories} savedUser={savedUser} />}
         {tab === "filials" && <FilialsTab />}
+        {tab === "customers" && <CustomersTab />}
+        {tab === "broadcast" && <BroadcastTab />}
         {tab === "admins" && savedUser.role === "superadmin" && <AdminsTab savedUser={savedUser} />}
       </div>
     </div>
