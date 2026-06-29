@@ -41,10 +41,13 @@ router.post("/webhook/telegram", async (req, res) => {
             { upsert: true }
           ).catch(() => {});
         }
+        const webUrl = process.env.FRONTEND_URL;
         await tgApi("sendMessage", {
           chat_id: cid,
-          text: `🌿 <b>Yalpiz</b> botiga obuna bo'ldingiz! Yangiliklar va aksiyalar shu yerga keladi.${process.env.FRONTEND_URL ? `\n\n🍽 Buyurtma berish: ${process.env.FRONTEND_URL}` : ""}`,
+          text: "🌿 <b>Yalpiz</b>ga xush kelibsiz!\nBuyurtma berish uchun pastdagi tugmani bosing 👇",
           parse_mode: "HTML",
+          // web_app tugmasi → ilova Telegram ichida OYNA bo'lib ochiladi (Mini App)
+          ...(webUrl ? { reply_markup: { inline_keyboard: [[{ text: "🍽 Ilovani ochish", web_app: { url: webUrl } }]] } } : {}),
         });
       }
       return res.sendStatus(200);
