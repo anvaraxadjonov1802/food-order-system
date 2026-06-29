@@ -1,9 +1,10 @@
 // Admin panel uchun umumiy yordamchilar (sof funksiyalar + rasm yuklash)
 import { api } from "./api";
 
-// Rasm compress — 2MB dan katta bo'lsa kichiklashtiradi
+// Rasmni WebP'ga konvert qiladi (sifat ~saqlanadi, hajm ~30-50% kichrayadi → joy tejaladi).
+// Juda katta bo'lsa (>1920px) o'lchami ham kichraytiriladi. Faqat rasm bo'lsa ishlaydi.
 export const compressImage = (file) => new Promise((resolve) => {
-  if (file.size < 2 * 1024 * 1024) { resolve(file); return; }
+  if (!file || !file.type || !file.type.startsWith("image/")) { resolve(file); return; }
   const reader = new FileReader();
   reader.readAsDataURL(file);
   reader.onload = (e) => {
@@ -17,11 +18,15 @@ export const compressImage = (file) => new Promise((resolve) => {
       canvas.width = width; canvas.height = height;
       canvas.getContext("2d").drawImage(img, 0, 0, width, height);
       canvas.toBlob((blob) => {
-        const out = new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
-        resolve(blob.size > file.size ? file : out);
-      }, "image/jpeg", 0.92);
+        if (!blob) { resolve(file); return; } // WebP qo'llab-quvvatlanmasa — original
+        const out = new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" });
+        // WebP kichikroq bo'lsa ishlatamiz, aks holda original (kafolat)
+        resolve(blob.size < file.size ? out : file);
+      }, "image/webp", 0.92); // 0.92 — yuqori sifat, ko'zga bilinmaydigan farq
     };
+    img.onerror = () => resolve(file);
   };
+  reader.onerror = () => resolve(file);
 });
 
 // Faylni serverga yuklaydi → URL qaytaradi (auth api orqali)

@@ -27,6 +27,26 @@ async function request(path, { method = "GET", body, auth = false, form = false 
   return data;
 }
 
+// ── Yengil kesh: GET javoblarini xotirada saqlaydi ──
+// Sahifalar orasida (SPA) qayta yuklamaydi. To'liq reload (F5) da yangilanadi.
+// Bir vaqtda bir xil so'rov ketsa — bitta marta yuboradi (dedup).
+const _cache = new Map();     // path -> { data, exp }
+const _inflight = new Map();  // path -> Promise
+
+export async function cachedGet(path, ttlMs = 5 * 60 * 1000) {
+  const hit = _cache.get(path);
+  if (hit && Date.now() < hit.exp) return hit.data;
+  if (_inflight.has(path)) return _inflight.get(path);
+  const p = request(path, {})
+    .then((data) => { _cache.set(path, { data, exp: Date.now() + ttlMs }); _inflight.delete(path); return data; })
+    .catch((e) => { _inflight.delete(path); throw e; });
+  _inflight.set(path, p);
+  return p;
+}
+
+// O'zgartirishdan keyin keshni tozalash (masalan admin taom qo'shsa)
+export function invalidateCache(path) { if (path) _cache.delete(path); else _cache.clear(); }
+
 export const API_BASE = BASE;
 export const api = {
   get: (p, auth = false) => request(p, { auth }),
